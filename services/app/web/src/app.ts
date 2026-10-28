@@ -1,16 +1,35 @@
-// Routes. The tool's own pages are /<text color>/<background color>; everything else is the site around it: SEO
-// files, icons, the JSON API, the badge and MCP.
-import { Hono } from "hono";
+// Routes. The tool's own pages are /<owner>/<repo> (and /<owner>/<repo>/tree/<ref>) for a GitHub repository and
+// POST /paste for a pasted README; everything else is the site around it: the checks page, SEO files, icons, the JSON
+// API, the badge and MCP.
+import { type Context, Hono } from "hono";
 import { ASSETS } from "./assets.generated";
-import { check } from "./contrast";
+import {
+	GitHubError,
+	type GitHubOptions,
+	parseRepo,
+	type RepoSpec,
+	specPath,
+} from "./github";
 import {
 	clientIp,
 	type ProxyMode,
 	RateLimiter,
 	securityHeaders,
 } from "./guard";
-import { handleMcp } from "./mcp";
-import { aboutPage, badge, homePage, notFoundPage, resultPage } from "./pages";
+import { type Loaded, RepoLoader } from "./loader";
+import { handleMcp, readmeTools } from "./mcp";
+import {
+	aboutPage,
+	badge,
+	checksPage,
+	errorPage,
+	homePage,
+	notFoundPage,
+	resultPage,
+} from "./pages";
+import { type ReadmeInput, type Report, score } from "./readme/score";
+import { isProjectType, type ProjectType } from "./readme/sections";
+import { summarize } from "./readme/summary";
 import {
 	ICONS,
 	llmsTxt,
@@ -22,14 +41,19 @@ import {
 import { SITE } from "./site";
 import { VIDEO } from "./video.generated";
 
+/** A pasted README larger than this is refused. */
+export const MAX_PASTE_BYTES = 512 * 1024;
+
 export interface AppOptions {
 	/** The address people use, ending in a slash. Without it, each request's own address (see baseOf). */
 	publicUrl?: string;
 	proxy?: ProxyMode;
-	/** API and MCP calls per client per minute. */
+	/** Fresh GitHub reads, API and MCP calls per client per minute. */
 	callsPerMinute?: number;
 	/** The date sitemap.xml gives as lastmod: when this build started. */
 	builtAt?: Date;
+	/** How to reach GitHub: a token, and a fetch to replace in tests. */
+	github?: GitHubOptions;
 }
 
 /** The icons and the social card from assets.generated.ts, decoded once. tests/seo.test.ts fails on a missing one. */
@@ -46,11 +70,15 @@ function loadAssets(): Map<string, { body: Uint8Array; type: string }> {
 	return files;
 }
 
+const typeParam = (v: string | undefined): ProjectType | undefined =>
+	isProjectType(v) ? v : undefined;
+
 export function createApp(options: AppOptions = {}) {
 	const proxy = options.proxy ?? "none";
 	const limit = new RateLimiter(options.callsPerMinute ?? 120, 60 * 1000);
 	const lastmod = (options.builtAt ?? new Date()).toISOString().slice(0, 10);
 	const files = loadAssets();
+	const loader = new RepoLoader(options.github);
 	const app = new Hono();
 
 	/**
@@ -71,14 +99,25 @@ export function createApp(options: AppOptions = {}) {
 	const rootOf = (c: Parameters<typeof baseOf>[0]) =>
 		new URL(`${baseOf(c)}/`).pathname.replace(/\/$/, "");
 
-	const limited = (c: { req: { raw: Request }; env: unknown }) => {
+	const clientOf = (c: { req: { raw: Request }; env: unknown }) => {
 		const env = c.env as
 			| { requestIP?: (r: Request) => { address: string } | null }
 			| undefined;
-		return limit.hit(
-			clientIp(c.req.raw.headers, env?.requestIP?.(c.req.raw)?.address, proxy),
+		return clientIp(
+			c.req.raw.headers,
+			env?.requestIP?.(c.req.raw)?.address,
+			proxy,
 		);
 	};
+	/** Counts one call for the client; the seconds to wait when it is over its limit, or 0. */
+	const limited = (c: Parameters<typeof clientOf>[0]) => limit.hit(clientOf(c));
+	/** A repository's files, counting a GitHub read (not a cached answer) against the client's limit. */
+	const load = (
+		c: Parameters<typeof clientOf>[0],
+		spec: RepoSpec,
+	): Promise<Loaded | undefined> => loader.get(spec, () => limited(c) === 0);
+	const busy =
+		"Too many repositories at once from here, or GitHub is busy. Wait a minute and try again, or paste the README.";
 
 	app.use("*", async (c, next) => {
 		await next();
@@ -86,42 +125,66 @@ export function createApp(options: AppOptions = {}) {
 			if (!c.res.headers.has(k)) c.res.headers.set(k, v);
 	});
 
-	app.get("/health", (c) =>
-		c.json({ status: "ok", service: SITE.name.toLowerCase() }),
-	);
+	app.get("/health", (c) => c.json({ status: "ok", service: SITE.id }));
 	app.get("/ready", (c) => c.json({ ready: true }));
 
 	// Pages
 	app.get("/", (c) => c.html(homePage(baseOf(c))));
 	app.get("/about", (c) => c.html(aboutPage(baseOf(c))));
+	app.get("/checks", (c) => c.html(checksPage(baseOf(c))));
 	app.get("/check", (c) => {
-		const r = check(c.req.query("fg") ?? "", c.req.query("bg") ?? "");
+		const value = c.req.query("repo") ?? "";
+		const spec = parseRepo(value);
+		if (!spec)
+			return c.html(
+				homePage(baseOf(c), {
+					error:
+						"That is not a GitHub repository. Enter owner/name or a github.com address, or paste the README.",
+					value,
+				}),
+				400,
+			);
+		const type = typeParam(c.req.query("type"));
 		return c.redirect(
-			r ? `${rootOf(c)}/${r.fg}/${r.bg}` : `${rootOf(c)}/`,
+			`${rootOf(c)}/${specPath(spec)}${type ? `?type=${type}` : ""}`,
 			303,
 		);
 	});
-	app.get("/:fg{[0-9a-fA-F#%]+}/:bg{[0-9a-fA-F#%]+}", (c) => {
-		const r = check(
-			decodeURIComponent(c.req.param("fg")),
-			decodeURIComponent(c.req.param("bg")),
+	app.post("/paste", async (c) => {
+		if (Number(c.req.header("content-length") ?? 0) > MAX_PASTE_BYTES * 2)
+			return c.html(
+				errorPage(baseOf(c), "That README is larger than 512 KB."),
+				413,
+			);
+		const body = await c.req.parseBody();
+		const readme =
+			typeof body.readme === "string" ? body.readme.replace(/\r\n/g, "\n") : "";
+		if (!readme.trim())
+			return c.html(
+				homePage(baseOf(c), { error: "Paste a README first." }),
+				400,
+			);
+		if (readme.length > MAX_PASTE_BYTES)
+			return c.html(
+				errorPage(baseOf(c), "That README is larger than 512 KB."),
+				413,
+			);
+		const type = typeParam(
+			typeof body.type === "string" ? body.type : undefined,
 		);
-		if (!r) return c.html(notFoundPage(baseOf(c)), 404);
-		// One address per result, so search engines and shared links agree: /FFF/000 → /ffffff/000000.
-		if (c.req.param("fg") !== r.fg || c.req.param("bg") !== r.bg)
-			return c.redirect(`${rootOf(c)}/${r.fg}/${r.bg}`, 301);
-		c.header("cache-control", "public, max-age=86400");
-		return c.html(resultPage(baseOf(c), r));
+		c.header("cache-control", "no-store");
+		return c.html(
+			resultPage(
+				baseOf(c),
+				score({ readme, readmePath: "README.md", ...(type ? { type } : {}) }),
+			),
+		);
 	});
 
 	// For search engines and AI assistants
 	app.get("/robots.txt", (c) => c.text(robotsTxt(baseOf(c))));
 	app.get("/sitemap.xml", (c) => {
-		const paths = [
-			"",
-			"about",
-			...SITE.examples.map(([fg, bg]) => `${fg}/${bg}`),
-		];
+		const paths = ["", "about", "checks", ...SITE.examples];
 		return c.body(sitemapXml(baseOf(c), paths, lastmod), 200, {
 			"content-type": "application/xml; charset=utf-8",
 		});
@@ -130,24 +193,29 @@ export function createApp(options: AppOptions = {}) {
 		c.text(
 			llmsTxt(baseOf(c), [
 				{
-					name: "Check two colors",
-					path: "1d1c1a/fbfaf7",
-					note: "put the text color, then the background, in the address",
+					name: "Score a repository",
+					path: "flisk-sh/flisk",
+					note: "put the GitHub owner and repository in the address",
 				},
 				{
 					name: "JSON API",
-					path: "api/contrast?fg=1d1c1a&bg=fbfaf7",
-					note: "the same result as JSON",
+					path: "api/score?repo=flisk-sh/flisk",
+					note: "the same report as JSON; POST {readme} for Markdown",
 				},
 				{
 					name: "MCP server",
 					path: "mcp",
-					note: "Streamable HTTP, one read-only tool, check_contrast",
+					note: "Streamable HTTP, one read-only tool, score_readme",
+				},
+				{
+					name: "Every check and threshold",
+					path: "checks",
+					note: "what each check looks at and its points",
 				},
 				{
 					name: "About and FAQ",
 					path: "about",
-					note: "what it does and stores",
+					note: "what it reads and stores",
 				},
 			]),
 		),
@@ -158,7 +226,7 @@ export function createApp(options: AppOptions = {}) {
 		}),
 	);
 	app.get("/.well-known/security.txt", (c) => c.text(securityTxt(baseOf(c))));
-	// The how-it-works clip (scripts/video.ts). Safari plays a video only from a server that answers byte ranges.
+	// The how-it-works clip (video/render.ts). Safari plays a video only from a server that answers byte ranges.
 	for (const [name, file] of Object.entries(VIDEO)) {
 		const body = Buffer.from(file.base64, "base64");
 		app.get(`/${name}`, (c) => {
@@ -193,30 +261,120 @@ export function createApp(options: AppOptions = {}) {
 		);
 
 	// For code
-	app.get("/api/contrast", (c) => {
+	const scoreSpec = async (
+		c: Parameters<typeof clientOf>[0],
+		spec: RepoSpec,
+		type?: ProjectType,
+	): Promise<Report | GitHubError | undefined> => {
+		const loaded = await load(c, spec);
+		if (loaded === undefined || loaded instanceof GitHubError) return loaded;
+		return score({ ...(loaded as ReadmeInput), ...(type ? { type } : {}) });
+	};
+	/** The result page of a report, in GitHub's case, with the ref only when one was asked for. */
+	const resultUrl = (
+		c: Parameters<typeof baseOf>[0],
+		r: Report,
+		spec: RepoSpec,
+	) =>
+		r.repo
+			? `${baseOf(c)}/${specPath({ owner: r.repo.owner, name: r.repo.name, ...(spec.ref ? { ref: spec.ref } : {}) })}`
+			: undefined;
+
+	app.get("/api/score", async (c) => {
+		const spec = parseRepo(c.req.query("repo") ?? "");
+		if (!spec)
+			return c.json(
+				{
+					error:
+						"repo must be a GitHub repository: owner/name or its github.com address.",
+				},
+				400,
+			);
+		const r = await scoreSpec(c, spec, typeParam(c.req.query("type")));
+		if (r === undefined)
+			return c.json({ error: busy }, 429, { "retry-after": "60" });
+		if (r instanceof GitHubError) return c.json({ error: r.message }, r.status);
+		return c.json({ ...r, url: resultUrl(c, r, spec) });
+	});
+	app.post("/api/score", async (c) => {
 		const wait = limited(c);
 		if (wait > 0)
 			return c.json({ error: "Too many requests." }, 429, {
 				"retry-after": String(wait),
 			});
-		const r = check(c.req.query("fg") ?? "", c.req.query("bg") ?? "");
-		return r
-			? c.json(r)
-			: c.json(
-					{ error: "fg and bg must be hex colors, like 1d1c1a or fff." },
-					400,
-				);
-	});
-	app.get("/badge/:fg/:file{[0-9a-fA-F]+\\.svg}", (c) => {
-		const r = check(
-			c.req.param("fg"),
-			c.req.param("file").replace(/\.svg$/, ""),
+		let body: { readme?: unknown; type?: unknown };
+		try {
+			body = await c.req.json();
+		} catch {
+			return c.json(
+				{ error: 'Send JSON: {"readme": "# Title…", "type": "cli"}.' },
+				400,
+			);
+		}
+		if (typeof body.readme !== "string" || !body.readme.trim())
+			return c.json({ error: "readme must be the README's Markdown." }, 400);
+		if (body.readme.length > MAX_PASTE_BYTES)
+			return c.json({ error: "readme is larger than 512 KB." }, 413);
+		const type = typeParam(
+			typeof body.type === "string" ? body.type : undefined,
 		);
-		if (!r) return c.notFound();
-		return c.body(badge(r), 200, {
-			"content-type": "image/svg+xml",
-			"cache-control": "public, max-age=86400",
-		});
+		return c.json(
+			score({
+				readme: body.readme,
+				readmePath: "README.md",
+				...(type ? { type } : {}),
+			}),
+		);
+	});
+	app.get("/badge/:owner/:file{[A-Za-z0-9._-]+\\.svg}", async (c) => {
+		const spec = parseRepo(
+			`${c.req.param("owner")}/${c.req.param("file").replace(/\.svg$/, "")}`,
+		);
+		if (!spec) return c.notFound();
+		const r = await scoreSpec(c, spec);
+		return c.body(
+			badge(r === undefined || r instanceof GitHubError ? null : r),
+			200,
+			{
+				"content-type": "image/svg+xml",
+				// Short when the score is unknown, so the badge shows it once GitHub answers.
+				"cache-control": `public, max-age=${r === undefined || r instanceof GitHubError ? 300 : 3600}`,
+			},
+		);
+	});
+	const tools = readmeTools(async (args) => {
+		const type = typeParam(args.type);
+		if (args.readme) {
+			if (args.readme.length > MAX_PASTE_BYTES)
+				return { error: "readme is larger than 512 KB." };
+			return summarize(
+				score({
+					readme: args.readme,
+					readmePath: "README.md",
+					...(type ? { type } : {}),
+				}),
+			);
+		}
+		const spec = parseRepo(args.repo ?? "");
+		if (!spec)
+			return {
+				error:
+					"repo must be a GitHub repository: owner/name or its github.com address.",
+			};
+		const r = await loader.get(spec);
+		if (r === undefined) return { error: busy };
+		if (r instanceof GitHubError) return { error: r.message };
+		const report = score({ ...r, ...(type ? { type } : {}) });
+		return summarize(
+			report,
+			resultUrl(
+				{
+					req: { url: options.publicUrl ?? SITE.url, header: () => undefined },
+				},
+				report,
+				spec,
+			),
+		);
 	});
 	app.get("/mcp", (c) =>
 		c.text("Send MCP requests with POST.", 405, { allow: "POST" }),
@@ -245,9 +403,47 @@ export function createApp(options: AppOptions = {}) {
 				400,
 			);
 		}
-		const answer = await handleMcp(body);
+		const answer = await handleMcp(body, tools);
 		return answer === undefined ? c.body(null, 202) : c.json(answer);
 	});
+
+	// A repository's result: /owner/repo, or /owner/repo/tree/<branch, tag or commit>.
+	const repoPage = async (c: Context) => {
+		const requested = `${c.req.param("owner")}/${c.req.param("repo")}${c.req.param("ref") ? `/tree/${c.req.param("ref")}` : ""}`;
+		const spec = parseRepo(requested);
+		if (!spec) return c.html(notFoundPage(baseOf(c)), 404);
+		const type = typeParam(c.req.query("type"));
+		const loaded = await load(c, spec);
+		if (loaded === undefined)
+			return c.html(errorPage(baseOf(c), busy, specPath(spec)), 429);
+		if (loaded instanceof GitHubError)
+			return c.html(
+				errorPage(baseOf(c), loaded.message, specPath(spec)),
+				loaded.status,
+			);
+		const input = loaded as ReadmeInput;
+		const canonical = specPath({
+			owner: input.repo?.owner ?? spec.owner,
+			name: input.repo?.name ?? spec.name,
+			...(spec.ref ? { ref: spec.ref } : {}),
+		});
+		// One address per repository, in GitHub's own case and without .git, so shared links and search engines agree.
+		if (canonical !== requested)
+			return c.redirect(
+				`${rootOf(c)}/${canonical}${type ? `?type=${type}` : ""}`,
+				301,
+			);
+		c.header("cache-control", "public, max-age=600");
+		return c.html(
+			resultPage(baseOf(c), score({ ...input, ...(type ? { type } : {}) }), {
+				path: canonical,
+			}),
+		);
+	};
+	const OWNER = ":owner{[A-Za-z0-9][A-Za-z0-9-]*}";
+	const REPO = ":repo{[A-Za-z0-9._-]+}";
+	app.get(`/${OWNER}/${REPO}`, repoPage);
+	app.get(`/${OWNER}/${REPO}/tree/:ref{.+}`, repoPage);
 
 	app.notFound((c) => c.html(notFoundPage(baseOf(c)), 404));
 	return app;

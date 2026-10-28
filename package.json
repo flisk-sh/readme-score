@@ -1,6 +1,7 @@
 {
-  "name": "flisk-template-launch",
+  "name": "readme-score",
   "version": "1.0.0",
+  "description": "README Score: your README, scored out of 100, with a fix for every miss.",
   "private": true,
   "type": "module",
   "workspaces": [

@@ -1,14 +1,28 @@
 import { describe, expect, it } from "bun:test";
 import { createApp } from "../src/app";
 import { RateLimiter, TtlCache } from "../src/guard";
+import { fakeGitHub, fixture, ROWCOUNT } from "./helpers";
 
-const app = createApp({ publicUrl: "https://tool.test/" });
+const github = () =>
+	fakeGitHub([
+		ROWCOUNT,
+		{ owner: "acme", name: "bare", files: { "README.md": fixture("bare.md") } },
+	]);
+const app = createApp({
+	publicUrl: "https://tool.test/",
+	github: { fetch: github().fetch },
+});
 const rpc = (a: ReturnType<typeof createApp>, body: unknown) =>
 	a.request("/mcp", {
 		method: "POST",
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify(body),
 	});
+const form = (fields: Record<string, string>) => ({
+	method: "POST",
+	headers: { "content-type": "application/x-www-form-urlencoded" },
+	body: new URLSearchParams(fields).toString(),
+});
 
 describe("pages", () => {
 	it("serves the home page with a policy that allows no scripts", async () => {
@@ -17,35 +31,87 @@ describe("pages", () => {
 		const csp = res.headers.get("content-security-policy");
 		expect(csp).toContain("default-src 'none'");
 		expect(csp).not.toContain("script-src");
+		expect(await res.text()).not.toContain("<script>");
 	});
 
-	it("shows a sample result on the home page, worked out by the checker", async () => {
+	it("shows a sample result on the home page, worked out by the checks", async () => {
 		const html = await (await app.request("/")).text();
-		expect(html).toContain("tool.test/999999/ffffff");
-		expect(html).toContain("<b>2.84:1</b>");
-		expect(html).toContain("#767676 is the nearest gray");
+		expect(html).toContain("Sample result");
+		expect(html).toMatch(/<b>\d+\/100<\/b><span class="grade g-[A-F]">/);
+		expect(html).toContain("Fix first, line");
 	});
 
-	it("sends the form, with the # a color input adds, to the result address", async () => {
-		const res = await app.request("/check?fg=%231D1C1A&bg=%23fbfaf7");
+	it("sends the form to the repository's address, and explains an address it cannot read", async () => {
+		const res = await app.request(
+			"/check?repo=https%3A%2F%2Fgithub.com%2Facme%2Frowcount.git&type=library",
+		);
 		expect(res.status).toBe(303);
-		expect(res.headers.get("location")).toBe("/1d1c1a/fbfaf7");
+		expect(res.headers.get("location")).toBe("/acme/rowcount?type=library");
+		const ref = await app.request(
+			"/check?repo=github.com/acme/rowcount/tree/release/v2",
+		);
+		expect(ref.headers.get("location")).toBe("/acme/rowcount/tree/release/v2");
+		const bad = await app.request("/check?repo=https%3A%2F%2Fgitlab.com%2Fx");
+		expect(bad.status).toBe(400);
+		expect(await bad.text()).toContain("That is not a GitHub repository.");
 	});
 
-	it("redirects other spellings of a result to one address", async () => {
-		const res = await app.request("/FFF/000");
+	it("renders a repository's result with its score, commit and line links", async () => {
+		const html = await (await app.request("/acme/rowcount")).text();
+		expect(html).toContain("100<small>/100</small>");
+		expect(html).toContain("Grade A");
+		expect(html).toContain(`<code>${"a".repeat(7)}</code> (main)`);
+		expect(html).toContain(
+			`href="https://github.com/acme/rowcount/blob/${"a".repeat(40)}/README.md#L56"`,
+		);
+		expect(html).toContain(
+			"Detected: package.json has a &quot;bin&quot; field.",
+		);
+	});
+
+	it("lists the fixes for a weak README, and rescores it as another type", async () => {
+		const html = await (await app.request("/acme/bare")).text();
+		expect(html).toContain("<h2>Fix first</h2>");
+		expect(html).toContain("Add a title as the first line");
+		const lib = await (await app.request("/acme/bare?type=library")).text();
+		expect(lib).toContain("<b>Library</b>");
+		expect(lib).toContain("Type chosen on this page.");
+	});
+
+	it("redirects another spelling of a repository to GitHub's own", async () => {
+		const res = await app.request("/ACME/RowCount.git");
 		expect(res.status).toBe(301);
-		expect(res.headers.get("location")).toBe("/ffffff/000000");
+		expect(res.headers.get("location")).toBe("/acme/rowcount");
 	});
 
-	it("renders a result", async () => {
-		const html = await (await app.request("/767676/ffffff")).text();
-		expect(html).toContain("4.54:1");
-		expect(html).toContain("#767676 on #ffffff");
+	it("explains a repository it cannot find, with the paste form open", async () => {
+		const res = await app.request("/acme/missing");
+		expect(res.status).toBe(404);
+		const html = await res.text();
+		expect(html).toContain("acme/missing is not a public GitHub repository.");
+		expect(html).toContain('<details class="paste" open>');
+	});
+
+	it("scores a pasted README and escapes what it shows", async () => {
+		const res = await app.request(
+			"/paste",
+			form({ readme: "# <script>alert(1)</script>\n\nText.\n", type: "app" }),
+		);
+		expect(res.status).toBe(200);
+		expect(res.headers.get("cache-control")).toBe("no-store");
+		const html = await res.text();
+		expect(html).toContain("The pasted README");
+		expect(html).toContain("<b>Full-stack app</b>");
+		expect(html).toContain('<meta name="robots" content="noindex">');
+		expect(html).not.toContain("<script>alert(1)</script>");
+		expect(html).toContain("&lt;script&gt;");
+		expect((await app.request("/paste", form({ readme: "  " }))).status).toBe(
+			400,
+		);
 	});
 
 	it("keeps links and canonical addresses under the prefix a proxy stripped", async () => {
-		const local = createApp();
+		const local = createApp({ github: { fetch: github().fetch } });
 		const headers = { "x-forwarded-prefix": "/api/web" };
 		const html = await (
 			await local.request("http://api.tool.localhost/", { headers })
@@ -55,50 +121,62 @@ describe("pages", () => {
 			'<link rel="canonical" href="http://api.tool.localhost/api/web/">',
 		);
 		const evil = await local.request(
-			"http://api.tool.localhost/check?fg=000&bg=fff",
+			"http://api.tool.localhost/check?repo=acme/rowcount",
 			{
 				headers: { "x-forwarded-prefix": "//evil.example" },
 			},
 		);
-		expect(evil.headers.get("location")).toBe("/000000/ffffff");
-	});
-});
-
-describe("how-it-works clip", () => {
-	it("autoplays muted on the home page and answers byte ranges for Safari", async () => {
-		const home = await (await app.request("/")).text();
-		expect(home).toContain('<video src="/demo.mp4"');
-		expect(home).toContain("autoplay muted loop playsinline");
-		const full = await app.request("/demo.mp4");
-		expect(full.headers.get("content-type")).toBe("video/mp4");
-		const size = (await full.arrayBuffer()).byteLength;
-		const part = await app.request("/demo.mp4", {
-			headers: { range: "bytes=0-1" },
-		});
-		expect(part.status).toBe(206);
-		expect(part.headers.get("content-range")).toBe(`bytes 0-1/${size}`);
-		expect(
-			(await app.request("/demo.mp4", { headers: { range: "bytes=9999999-" } }))
-				.status,
-		).toBe(416);
+		expect(evil.headers.get("location")).toBe("/acme/rowcount");
 	});
 });
 
 describe("API, badge and MCP", () => {
-	it("answers JSON and the badge", async () => {
+	it("answers a repository's report as JSON, and a pasted README's", async () => {
 		const json = (await (
-			await app.request("/api/contrast?fg=000&bg=fff")
-		).json()) as { ratio: number };
-		expect(json.ratio).toBe(21);
-		expect((await app.request("/api/contrast?fg=nope&bg=fff")).status).toBe(
-			400,
+			await app.request("/api/score?repo=acme/rowcount")
+		).json()) as {
+			score: number;
+			grade: string;
+			url: string;
+			groups: { id: string }[];
+		};
+		expect([json.score, json.grade, json.url]).toEqual([
+			100,
+			"A",
+			"https://tool.test/acme/rowcount",
+		]);
+		expect(json.groups.map((g) => g.id)).toEqual([
+			"sections",
+			"first-screen",
+			"readability",
+			"quickstart",
+			"links",
+			"tagline",
+		]);
+		expect((await app.request("/api/score?repo=nope")).status).toBe(400);
+		expect((await app.request("/api/score?repo=acme/missing")).status).toBe(
+			404,
 		);
-		const svg = await app.request("/badge/000/fff.svg");
-		expect(svg.headers.get("content-type")).toContain("image/svg+xml");
-		expect(await svg.text()).toContain("21.00:1 AA");
+		const posted = await app.request("/api/score", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ readme: fixture("bare.md"), type: "api" }),
+		});
+		expect(
+			((await posted.json()) as { type: { type: string } }).type.type,
+		).toBe("api");
 	});
 
-	it("initializes, lists check_contrast and runs it", async () => {
+	it("draws the badge with the score, and unknown for a missing repository", async () => {
+		const svg = await app.request("/badge/acme/rowcount.svg");
+		expect(svg.headers.get("content-type")).toContain("image/svg+xml");
+		expect(await svg.text()).toContain("100/100 A");
+		const missing = await app.request("/badge/acme/missing.svg");
+		expect(await missing.text()).toContain("unknown");
+		expect(missing.headers.get("cache-control")).toContain("max-age=300");
+	});
+
+	it("initializes, lists score_readme and runs it on a repository and on Markdown", async () => {
 		const init = (await (
 			await rpc(app, {
 				jsonrpc: "2.0",
@@ -106,8 +184,11 @@ describe("API, badge and MCP", () => {
 				method: "initialize",
 				params: { protocolVersion: "2025-03-26" },
 			})
-		).json()) as { result: { protocolVersion: string } };
+		).json()) as {
+			result: { protocolVersion: string; serverInfo: { name: string } };
+		};
 		expect(init.result.protocolVersion).toBe("2025-03-26");
+		expect(init.result.serverInfo.name).toBe("readme-score");
 		expect(
 			(await rpc(app, { jsonrpc: "2.0", method: "notifications/initialized" }))
 				.status,
@@ -117,37 +198,52 @@ describe("API, badge and MCP", () => {
 		).json()) as {
 			result: { tools: { name: string }[] };
 		};
-		expect(list.result.tools.map((t) => t.name)).toEqual(["check_contrast"]);
-		const call = (await (
-			await rpc(app, {
-				jsonrpc: "2.0",
-				id: 3,
-				method: "tools/call",
-				params: {
-					name: "check_contrast",
-					arguments: { foreground: "#999", background: "fff" },
-				},
-			})
-		).json()) as { result: { content: { text: string }[]; isError: boolean } };
-		expect(call.result.isError).toBe(false);
-		expect(call.result.content[0].text).toContain(
-			"Nearest text color that passes AA",
+		expect(list.result.tools.map((t) => t.name)).toEqual(["score_readme"]);
+		const call = async (args: object) =>
+			(
+				(await (
+					await rpc(app, {
+						jsonrpc: "2.0",
+						id: 3,
+						method: "tools/call",
+						params: { name: "score_readme", arguments: args },
+					})
+				).json()) as {
+					result: { content: { text: string }[]; isError: boolean };
+				}
+			).result;
+		const repo = await call({ repo: "https://github.com/acme/rowcount" });
+		expect(repo.isError).toBe(false);
+		expect(repo.content[0].text).toStartWith(
+			`acme/rowcount at ${"a".repeat(7)}: 100/100 (A) as a CLI tool`,
 		);
+		expect(repo.content[0].text).toContain(
+			"Full report: https://tool.test/acme/rowcount",
+		);
+		const md = await call({ readme: fixture("bare.md") });
+		expect(md.content[0].text).toContain("Fix first:");
+		expect(md.content[0].text).toContain(
+			'Installation (line 4): missing, limit required for a CLI tool. Add "## Installation" at line 4, at the end.',
+		);
+		expect((await call({})).isError).toBe(true);
 	});
 
 	it("answers errors as JSON-RPC, and limits calls per client", async () => {
 		const bad = (await (
 			await rpc(app, { jsonrpc: "2.0", id: 4, method: "nope" })
-		).json()) as {
-			error: { code: number };
-		};
+		).json()) as { error: { code: number } };
 		expect(bad.error.code).toBe(-32601);
-		const tight = createApp({ callsPerMinute: 1 });
-		expect((await tight.request("/api/contrast?fg=000&bg=fff")).status).toBe(
+		const tight = createApp({
+			callsPerMinute: 1,
+			github: { fetch: github().fetch },
+		});
+		expect((await tight.request("/api/score?repo=acme/rowcount")).status).toBe(
 			200,
 		);
-		expect((await tight.request("/api/contrast?fg=000&bg=fff")).status).toBe(
-			429,
+		// The second repository needs a GitHub read, which the limit no longer allows; a cached one still answers.
+		expect((await tight.request("/api/score?repo=acme/bare")).status).toBe(429);
+		expect((await tight.request("/api/score?repo=acme/rowcount")).status).toBe(
+			200,
 		);
 	});
 });

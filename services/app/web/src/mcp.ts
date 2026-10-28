@@ -1,11 +1,12 @@
 // A read-only MCP server over Streamable HTTP. Stateless and answered with plain JSON (no event stream), which the
-// transport allows, so there is no session to keep. Add tools to TOOLS; each one gets its arguments and returns text.
-import { check, summarize } from "./contrast";
+// transport allows, so there is no session to keep. readmeTools() builds the tools; each one gets its arguments and
+// returns text.
+import { PROJECT_TYPES } from "./readme/sections";
 import { SITE } from "./site";
 
 const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 
-interface Tool {
+export interface Tool {
 	definition: {
 		name: string;
 		title: string;
@@ -17,40 +18,59 @@ interface Tool {
 	run(args: Record<string, unknown>): Promise<string | { error: string }>;
 }
 
-const TOOLS: Tool[] = [
-	{
-		definition: {
-			name: "check_contrast",
-			title: "Check color contrast",
-			description:
-				"WCAG 2.2 contrast ratio between a text color and a background color, with AA and AAA verdicts for body text, large text and interface parts, and the nearest text color that passes AA.",
-			inputSchema: {
-				type: "object",
-				properties: {
-					foreground: {
-						type: "string",
-						description: "Text color as hex, e.g. 1d1c1a or #1d1c1a",
-					},
-					background: {
-						type: "string",
-						description: "Background color as hex, e.g. fbfaf7",
+/** The tools, around one function that scores a repository or a pasted README and answers the report as text. */
+export function readmeTools(
+	scoreText: (args: {
+		repo?: string;
+		readme?: string;
+		type?: string;
+	}) => Promise<string | { error: string }>,
+): Tool[] {
+	return [
+		{
+			definition: {
+				name: "score_readme",
+				title: "Score a README",
+				description:
+					"Scores a README out of 100 with deterministic checks (no model): the sections a reader expects for the project type, the first screen, readability, the quickstart, links and the tagline. Answers the score, the failing checks with their line and a fix each, and a link to the full report. Give a public GitHub repository, or the README's Markdown.",
+				inputSchema: {
+					type: "object",
+					properties: {
+						repo: {
+							type: "string",
+							description:
+								"A public GitHub repository: owner/name, or its github.com address, with /tree/<branch> for a branch",
+						},
+						readme: {
+							type: "string",
+							description:
+								"The README's Markdown, when there is no public repository to read",
+						},
+						type: {
+							type: "string",
+							enum: [...PROJECT_TYPES],
+							description:
+								"The project type to score against; detected from the files when left out",
+						},
 					},
 				},
-				required: ["foreground", "background"],
+				annotations: { readOnlyHint: true, openWorldHint: true },
 			},
-			annotations: { readOnlyHint: true, openWorldHint: false },
+			async run(args) {
+				const repo = typeof args.repo === "string" ? args.repo : undefined;
+				const readme =
+					typeof args.readme === "string" ? args.readme : undefined;
+				if (!repo && !readme)
+					return { error: "Give repo (owner/name) or readme (the Markdown)." };
+				return scoreText({
+					...(repo ? { repo } : {}),
+					...(readme ? { readme } : {}),
+					...(typeof args.type === "string" ? { type: args.type } : {}),
+				});
+			},
 		},
-		async run(args) {
-			const r = check(
-				String(args.foreground ?? ""),
-				String(args.background ?? ""),
-			);
-			return r
-				? summarize(r)
-				: { error: "Both colors must be hex, like 1d1c1a or #fff." };
-		},
-	},
-];
+	];
+}
 
 interface JsonRpcRequest {
 	jsonrpc?: string;
@@ -60,17 +80,23 @@ interface JsonRpcRequest {
 }
 
 /** Answers one JSON-RPC message (or a batch); undefined when nothing is to be sent back (notifications). */
-export async function handleMcp(body: unknown): Promise<unknown> {
+export async function handleMcp(
+	body: unknown,
+	tools: Tool[],
+): Promise<unknown> {
 	if (Array.isArray(body)) {
 		const answers = (
-			await Promise.all(body.map((m) => handleOne(m as JsonRpcRequest)))
+			await Promise.all(body.map((m) => handleOne(m as JsonRpcRequest, tools)))
 		).filter((a) => a !== undefined);
 		return answers.length ? answers : undefined;
 	}
-	return handleOne(body as JsonRpcRequest);
+	return handleOne(body as JsonRpcRequest, tools);
 }
 
-async function handleOne(message: JsonRpcRequest): Promise<unknown> {
+async function handleOne(
+	message: JsonRpcRequest,
+	TOOLS: Tool[],
+): Promise<unknown> {
 	if (
 		!message ||
 		typeof message !== "object" ||
@@ -93,7 +119,7 @@ async function handleOne(message: JsonRpcRequest): Promise<unknown> {
 					: PROTOCOL_VERSIONS[0],
 				capabilities: { tools: { listChanged: false } },
 				serverInfo: {
-					name: SITE.name.toLowerCase(),
+					name: SITE.id,
 					title: SITE.name,
 					version: "1.0.0",
 				},

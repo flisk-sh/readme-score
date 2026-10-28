@@ -1,8 +1,8 @@
-# Render Blueprint on the free plan: render.com → New → Blueprint → flisk-sh/flisk-template-launch. No database and
-# no API keys to fill in. See DEPLOY.md.
+# Render Blueprint on the free plan: render.com → New → Blueprint → flisk-sh/readme-score. No database; one optional
+# secret, GITHUB_TOKEN, that Render asks for. See DEPLOY.md.
 services:
   - type: web
-    name: flisk-template-launch
+    name: readme-score
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free
@@ -11,11 +11,15 @@ services:
     healthCheckPath: /ready
     # Your own domain: uncomment and put it in PUBLIC_URL too (`bun run rename` does both). Without a payment method
     # on file, Render allows two custom domains per workspace.
-    # domains:
-    #   - your-tool.example.com
+    domains:
+      - readme.flisk.ai
     envVars:
       # The address people use. Without a custom domain, your service's https://<name>.onrender.com/.
       - key: PUBLIC_URL
-        value: https://your-tool.example.com/
+        value: https://readme.flisk.ai/
       - key: TRUST_PROXY
         value: last-forwarded
+      # Optional: raises GitHub's limit for this server from 60 to 5,000 API calls an hour (3 per repository read).
+      # A fine-grained token with no permissions is enough. Render asks for the value; it is not in this file.
+      - key: GITHUB_TOKEN
+        sync: false

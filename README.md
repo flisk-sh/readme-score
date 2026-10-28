@@ -1,91 +1,157 @@
-# Flisk launch template
+# README Score: your README, scored out of 100, with a fix for every miss
 
-A small, free web tool you can put on Product Hunt this week: **one service, no database, no API keys**, with the
-SEO, icons and launch kit already done. Built and run locally with [Flisk](https://github.com/flisk-sh/flisk), hosted
-for free on Render.
+![The result for flisk-sh/flisk: 92 out of 100, grade A, and the two failing checks first, each with its line and its fix](docs/result.png)
 
-The example tool is **Contrast**: put two colors in the address (`/1d1c1a/fbfaf7`) and get the WCAG contrast ratio,
-AA/AAA verdicts and the nearest color that passes. Replace it with your own; everything around it stays.
-
-![How the example tool works: two colors in the address, the contrast ratio, each WCAG level, and the API, badge and MCP server](docs/demo.gif)
-
-[Citable](https://github.com/flisk-sh/citable) and [Helpdock](https://github.com/flisk-sh/helpdock) are built the
-same way.
-
-## What is already done
-
-| | Where |
-| --- | --- |
-| Title, description, canonical, robots meta, theme color per scheme | `src/seo.ts` → `head()` |
-| Open Graph and X/Twitter card with a 1200×630 image | `head()`, `brand/og.svg` |
-| JSON-LD: WebSite, Organization, WebApplication, FAQPage, BreadcrumbList | `jsonLd()`, `faqJsonLd()` |
-| `robots.txt` that names the AI answer crawlers, keeps out the API, points at the sitemap | `robotsTxt()` |
-| `sitemap.xml`, `llms.txt`, `site.webmanifest`, `/.well-known/security.txt` | `src/seo.ts` |
-| favicon.ico (16/32/48), icon.svg, apple-touch-icon, 192/512 PNG, maskable icon | `brand/*.svg` → `bun run icons` → `src/assets.generated.ts` |
-| One address per result (other spellings 301), a noindex 404 page | `src/app.ts` |
-| A JSON API, an embeddable SVG badge and an MCP server (Streamable HTTP, no key) | `src/app.ts`, `src/mcp.ts` |
-| No JavaScript at all; a Content-Security-Policy that allows none | `src/guard.ts` |
-| Rate limits per client behind Render's proxy or Cloudflare | `src/guard.ts` |
-| Tests that fail when a page loses its title, canonical, card or JSON-LD, or an icon goes missing | `tests/seo.test.ts` |
-| CI: typecheck, lint, tests, and the production image started and asked for its SEO files | `.github/workflows/ci.yml` |
-| Free hosting: one Render web service | `render.yaml`, `Dockerfile`, [DEPLOY.md](DEPLOY.md) |
-| A how-it-works film in the look of the Flisk promos, made from screenshots of your running site: autoplaying on the home page (MP4 with byte ranges, a still for reduced motion) and a GIF for the README | `video/film.json` → `bun video/shots.ts && bun video/render.ts` |
-| Product Hunt kit: ICE scoring, taglines, gallery, first comment, checklist | [LAUNCH.md](LAUNCH.md) |
-
-## Make it yours
-
-Click **Use this template** on GitHub, clone your copy, then:
+Enter a GitHub repository or paste a README, and get a score out of 100, the sections found and missing, and a fix for
+each miss. It runs at [readme.flisk.ai](https://readme.flisk.ai/).
 
 ```bash
-cd services/app/web
+git clone https://github.com/flisk-sh/readme-score
+cd readme-score/services/app/web
 bun install
-bun run rename --name "Acme" --domain acme.example.com --repo you/acme
+bun run dev
 ```
 
-1. `src/site.ts`: the tagline (60 characters at most), the description (110 to 160), the FAQ and the examples. Every
-   tag, JSON-LD node and SEO file is built from it.
-2. `src/contrast.ts`: replace it with your tool. Keep the shape: input from the address, a result object, one
-   function that the page, the API and the MCP tool all call. Then update `src/pages.ts`, the routes in
-   `src/app.ts` and the tool in `src/mcp.ts`.
-3. `brand/icon.svg`, `brand/icon-full.svg` (full-bleed, for the maskable and Apple icons) and `brand/og.svg`, then
-   `bun run icons`. It embeds them in `src/assets.generated.ts`, because Flisk's image ships `src/` only.
-4. `video/film.json`: point "shots" at your pages (and the elements to highlight) and write the scenes, then
-   `bun video/shots.ts && bun video/render.ts` (needs Chrome and ffmpeg). It writes the film into
-   `src/video.generated.ts` and the GIF into `docs/demo.gif`.
-5. `bun test`: the SEO tests tell you what you broke.
+Then open http://localhost:4000/flisk-sh/flisk, or paste a README on http://localhost:4000/.
 
-If the tool fetches other sites, take the SSRF guard (`src/net.ts`) from
-[Citable](https://github.com/flisk-sh/citable/blob/main/services/app/web/src/net.ts) and use `Slots` and `TtlCache`
-from `src/guard.ts` to cap and cache the work.
+## What is README Score?
 
-## Run it
+A README checker with no model in it. Every check is a fixed rule (a pattern, a count or a formula), so the same
+README always gets the same score, and every finding names the line to change and how. It replaces AI README
+reviews, whose score moves between runs and whose advice points at no line.
 
-With Flisk (Docker, Tilt and the [Flisk CLI](https://github.com/flisk-sh/flisk)):
+## Key features
+
+- A score out of 100 and a grade, with the failing checks that cost the most points first.
+- A line for every finding, linked to that line on GitHub at the commit that was scored.
+- A concrete fix for every miss: the heading to add and where, the command to move, the link to correct.
+- Weights for the kind of project: a CLI tool, a library, a full-stack app or a backend API.
+- A JSON API, a score badge and an MCP tool, none needing a key.
+
+## What it checks
+
+Six groups, 100 points. A check with nothing to look at (a pasted README has no file tree) is left out, and the score
+is the points earned over the points that count. [`/checks`](https://readme.flisk.ai/checks) lists every threshold,
+weight and synonym, read from the code that scores.
+
+| Group | Points | What it looks at | From Flisk's scoreboard |
+| --- | --- | --- | --- |
+| Sections | 40 | Overview, key features, prerequisites, installation, usage, configuration, examples, troubleshooting, roadmap, contributing, license: headings matched against fixed synonym lists, weighted for a CLI tool, a library, a full-stack app or a backend API | new |
+| First screen | 20 | A title within 5 non-empty lines, an install command within 40 lines, a picture within 20, at most 6 badges and 250 words before the first code block | `readme-first-screen` |
+| Readability | 10 | Flesch reading ease of the prose: 60 or more for every point, 30 or less for none; the longest sentences and infrastructure words listed | `readme-readability` |
+| Quickstart | 10 | One shell block that installs the project, at most 6 commands, and translated READMEs that give the same commands | `steps-to-first-healthy`, `translation-drift` |
+| Links | 10 | Relative links that name a file in the repository with the right case, and #anchors that match a heading | `doc-links` |
+| Tagline | 10 | One description in the README H1, the package manifests, llms.txt and the GitHub About box | `tagline-consistency` |
+
+The checks are ported from the scoreboard in [flisk-sh/flisk](https://github.com/flisk-sh/flisk/tree/main/scripts/scores)
+and generalised: any package manager's install command instead of Flisk's, any manifest instead of Flisk's two. The
+thresholds are named constants in [`services/app/web/src/readme/`](services/app/web/src/readme).
+
+## Prerequisites
+
+- [Bun](https://bun.sh/) 1.2 or newer (`bun --version`). Nothing else: no database and no API key.
+- For `flisk up` only: Docker, Tilt and the [Flisk CLI](https://github.com/flisk-sh/flisk).
+
+## Installation
+
+Clone it and install the one dependency (Hono), as at the top, then check the server answers:
 
 ```bash
-flisk up
+curl -s http://localhost:4000/health
 ```
 
-It opens at http://api.flisk-template-launch.localhost/api/web/ (the name follows `.flisk/project.json`). The app
-never touches a database. Flisk still starts its shared Postgres container locally even though `.flisk/project.json`
-leaves it out; online there is none.
+It prints `{"status":"ok","service":"readme-score"}`. The repository keeps the launch template's Flisk setup
+(`.flisk/project.json`, `services/app/web/service.json`), so `flisk up` from the root runs it under Flisk as well.
 
-Without Flisk:
+## Usage
 
-```bash
-cd services/app/web && bun install && bun run dev
-```
+| Address | What it answers |
+| --- | --- |
+| `/<owner>/<repo>` | The result page for a public GitHub repository; `/tree/<branch>` after it for a branch, `?type=cli\|library\|app\|api` to score it as another kind of project |
+| `POST /paste` | The result for a pasted README (the form on the home page) |
+| `/api/score?repo=owner/repo` | The same report as JSON; `POST /api/score` with `{"readme": "…", "type": "cli"}` scores Markdown |
+| `/badge/<owner>/<repo>.svg` | A badge with the score |
+| `/mcp` | An MCP server (Streamable HTTP) with one tool, `score_readme` |
 
-## Settings
+A repository is read at one commit with three GitHub API calls (the repository, the commit, the file tree); its files
+come from raw.githubusercontent.com, which the API limit does not count. Results stay in memory for ten minutes.
 
-All optional. `PORT`, `PUBLIC_URL` (the address people use, for canonical links and the card; set it online),
-`TRUST_PROXY` (`none`, `last-forwarded` on Render, `cloudflare`) and `CALLS_PER_MINUTE` (API and MCP, 120).
+## Configuration
 
-## Checks
+All optional.
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `PORT` | 4000 | Where to listen (10000 on Render) |
+| `PUBLIC_URL` | the request's own address | The address people use, for canonical links, the social card and the sitemap |
+| `TRUST_PROXY` | `none` | `last-forwarded` on Render, `cloudflare` behind Cloudflare's proxy: which header names the client, for rate limits |
+| `CALLS_PER_MINUTE` | 120 | Fresh GitHub reads, API and MCP calls per client per minute |
+| `GITHUB_TOKEN` | none | Raises GitHub's limit for the server from 60 to 5,000 API calls an hour; a fine-grained token with no permissions is enough |
+
+## Examples
+
+- Result pages: [flisk-sh/flisk](https://readme.flisk.ai/flisk-sh/flisk),
+  [honojs/hono](https://readme.flisk.ai/honojs/hono) as a library,
+  [BurntSushi/ripgrep](https://readme.flisk.ai/BurntSushi/ripgrep) as a CLI tool.
+- The report as JSON, and the failing checks alone:
+
+  ```bash
+  curl -s 'http://localhost:4000/api/score?repo=flisk-sh/flisk' | jq '[.groups[].checks[] | select(.pass == false) | {title, line, fix}]'
+  ```
+
+- A pasted README, scored as a library:
+
+  ```bash
+  curl -s localhost:4000/api/score -H 'content-type: application/json' -d '{"readme": "# slugkit\n\nTurn titles into slugs.\n", "type": "library"}' | jq .score
+  ```
+
+- The badge in your own README: `[![README score](https://readme.flisk.ai/badge/<owner>/<repo>.svg)](https://readme.flisk.ai/<owner>/<repo>)`
+- From an AI assistant: `claude mcp add --transport http readme-score https://readme.flisk.ai/mcp`, then ask it to score
+  a repository.
+
+## Troubleshooting
+
+| You see | Fix |
+| --- | --- |
+| `This server has used up its GitHub API calls until …` | Set `GITHUB_TOKEN`, or wait for the time it names, or paste the README |
+| `Failed to start server. Is port 4000 in use?` | Start it on another port: `PORT=4001 bun run dev` |
+| `… has no README in .github/, the root or docs/` | GitHub shows no README for that repository either; paste one to score it |
+| `Relative links resolve: not checked: GitHub sent part of the file tree` | The repository has too many files for one tree call; the other checks still run |
+
+## Tests
 
 ```bash
 cd services/app/web
 bun run typecheck && bun run lint && bun test
 ```
 
-MIT licensed.
+Each check has unit tests on the fixture READMEs in [`tests/fixtures/`](services/app/web/tests/fixtures). To check the
+port against the original, run Flisk's own scoreboard and this code on the same commit of flisk-sh/flisk:
+
+```bash
+# from services/app/web, with a flisk checkout next to this one
+GITHUB_TOKEN=$(gh auth token) bun scripts/parity.ts --flisk ../../../../flisk --ref main
+```
+
+It exits 1 when the first-screen, readability or tagline results differ.
+
+## Deploy
+
+One free Render web service from [`render.yaml`](render.yaml), with readme.flisk.ai as a CNAME on Cloudflare. The
+steps, the token and Render's two-domain limit are in [DEPLOY.md](DEPLOY.md).
+
+## Roadmap
+
+- The how-it-works film: `video/film.json` describes it for this site. Start the app with `PORT=4177 bun src/index.ts`, then `bun run video` renders it (Chrome and
+  ffmpeg); the home page shows it once `src/video.generated.ts` has it.
+- Anchors into other files (`docs/guide.md#install`) are counted, not checked yet.
+- The Product Hunt kit in [LAUNCH.md](LAUNCH.md) is still the template's, to fill in before launch.
+
+## Contributing
+
+Run the tests above and open a pull request. A new check is a pure function in `src/readme/`, its points in
+`POINTS` in `score.ts`, a line on the checks page, and tests on a fixture README.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

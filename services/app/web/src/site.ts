@@ -3,15 +3,17 @@
 // site.webmanifest and security.txt are all built from it.
 
 export const SITE = {
-	name: "Contrast",
+	name: "README Score",
+	/** Lower case, no spaces: the MCP server's name, the health check's service and the badge's label. */
+	id: "readme-score",
 	/** Under 60 characters: the <title> of the home page and the Product Hunt tagline. */
-	tagline: "WCAG color contrast, as a link you can share",
-	/** 140 to 160 characters: the meta description and the link preview text. */
+	tagline: "Your README, scored out of 100, with a fix for every miss",
+	/** 110 to 160 characters: the meta description and the link preview text. */
 	description:
-		"Put two colors in the address and get their WCAG contrast ratio, AA and AAA verdicts and the nearest color that passes. Free, no signup, open source.",
+		"Enter a GitHub repo or paste a README: a score out of 100, the sections found and missing, and a fix for each miss. No AI: same README, same score.",
 	/** Where the site lives online, ending in a slash. PUBLIC_URL overrides it at run time. */
-	url: "https://your-tool.example.com/",
-	repo: "https://github.com/flisk-sh/flisk-template-launch",
+	url: "https://readme.flisk.ai/",
+	repo: "https://github.com/flisk-sh/readme-score",
 	lang: "en",
 	locale: "en_US",
 	/** The organization or person behind it, for JSON-LD and the footer. */
@@ -22,31 +24,43 @@ export const SITE = {
 	themeColor: { light: "#fbfaf7", dark: "#141413" },
 	/** Where to report a security problem, for /.well-known/security.txt. */
 	securityContact:
-		"https://github.com/flisk-sh/flisk-template-launch/security/advisories/new",
+		"https://github.com/flisk-sh/readme-score/security/advisories/new",
 	/** Shown on /about and sent as FAQPage JSON-LD. Write the questions people type into search and AI assistants. */
 	faq: [
 		{
-			q: "What contrast ratio does WCAG require?",
-			a: "WCAG 2.2 level AA asks for 4.5:1 for body text and 3:1 for large text (24px, or 18.66px bold) and for interface parts such as borders and icons. Level AAA asks for 7:1 and 4.5:1.",
+			q: "How is the README score worked out?",
+			a: "From 23 checks in six groups: the sections a reader expects for your kind of project (40 points), the first screen (20), readability (10), the quickstart (10), links (10) and the tagline (10). A check with nothing to look at is left out, and the score is the points earned over the points that count. Every threshold is listed on the checks page.",
 		},
 		{
-			q: "How do I share a result?",
-			a: "Copy the address. Every result has its own page: /1d1c1a/fbfaf7 compares #1d1c1a text on a #fbfaf7 background.",
+			q: "Is AI involved?",
+			a: "No. Every check is a fixed rule: a pattern, a count or a formula. The same README always gets the same score, and every finding names the line to change.",
 		},
 		{
-			q: "Is there an API?",
-			a: "Yes: /api/contrast?fg=1d1c1a&bg=fbfaf7 answers JSON, and /mcp is an MCP server with one tool, check_contrast, for Claude, ChatGPT, Cursor or Codex. Neither needs a key.",
+			q: "Which repositories can it read?",
+			a: "Public GitHub repositories. It reads the README, the file tree, the package manifests, llms.txt files and translated READMEs at one commit, and names that commit on the result. For anything else, paste the README.",
+		},
+		{
+			q: "How does it know what kind of project it is?",
+			a: "From the files: a bin field in package.json makes a CLI tool, a web framework an app or an API, a main field a library; pyproject.toml, Cargo.toml and go.mod are read the same way. A pasted README is read for signals such as npm install -g or GET /users. You can pick another type on the result page.",
+		},
+		{
+			q: "Is there an API or a badge?",
+			a: "Yes: /api/score?repo=owner/name answers JSON, /badge/owner/name.svg is a badge with the score, and /mcp is an MCP server with one tool, score_readme, for Claude, ChatGPT, Cursor or Codex. None needs a key.",
 		},
 		{
 			q: "What is stored?",
-			a: "Nothing. The result is computed from the address on every request, with no database and no cookies.",
+			a: "Nothing on disk. A repository's result is kept in memory for ten minutes, so a shared link does not ask GitHub again, then forgotten. A pasted README is scored and dropped. No cookies.",
+		},
+		{
+			q: "Where do the checks come from?",
+			a: "From the scoreboard Flisk runs on its own README on every pull request. On the same file, the first-screen, readability and tagline results here are the scoreboard's.",
 		},
 	],
-	/** Example results linked from the home page; also listed in sitemap.xml. */
+	/** Example repositories linked from the home page; also listed in sitemap.xml. */
 	examples: [
-		["1d1c1a", "fbfaf7"],
-		["767676", "ffffff"],
-		["ffffff", "2d4cc8"],
-		["e0a54a", "141413"],
+		"flisk-sh/flisk",
+		"honojs/hono",
+		"BurntSushi/ripgrep",
+		"fastapi/fastapi",
 	],
 } as const;

@@ -3,10 +3,12 @@ import { createApp } from "../src/app";
 import { ASSETS } from "../src/assets.generated";
 import { ICONS } from "../src/seo";
 import { SITE } from "../src/site";
+import { fakeGitHub, ROWCOUNT } from "./helpers";
 
 const app = createApp({
 	publicUrl: "https://tool.test/",
 	builtAt: new Date("2026-10-28"),
+	github: { fetch: fakeGitHub([ROWCOUNT]).fetch },
 });
 const page = async (path: string) => (await app.request(path)).text();
 const attr = (html: string, re: RegExp) => html.match(re)?.[1];
@@ -17,6 +19,7 @@ describe("site.ts", () => {
 		expect(SITE.description.length).toBeGreaterThanOrEqual(110);
 		expect(SITE.description.length).toBeLessThanOrEqual(160);
 		expect(SITE.url).toMatch(/^https:\/\/.+\/$/);
+		expect(SITE.id).toMatch(/^[a-z0-9-]+$/);
 	});
 
 	it("ships every icon the head and the manifest link to, at its size", () => {
@@ -31,47 +34,50 @@ describe("site.ts", () => {
 	});
 });
 
-describe.each(["/", "/about", "/1d1c1a/fbfaf7"])("the head of %s", (path) => {
-	it("has one title, a description, a canonical link and a social card", async () => {
-		const html = await page(path);
-		expect(html.match(/<title>/g)).toHaveLength(1);
-		expect(html.match(/<h1[ >]/g)).toHaveLength(1);
-		const description = attr(
-			html,
-			/<meta name="description" content="([^"]+)"/,
-		);
-		expect(description?.length).toBeGreaterThan(50);
-		expect(description?.length).toBeLessThanOrEqual(160);
-		expect(attr(html, /<link rel="canonical" href="([^"]+)"/)).toBe(
-			`https://tool.test${path}`,
-		);
-		expect(attr(html, /<meta property="og:image" content="([^"]+)"/)).toBe(
-			"https://tool.test/og.png",
-		);
-		expect(html).toContain(
-			'<meta name="twitter:card" content="summary_large_image">',
-		);
-		expect(html).toContain('<html lang="en">');
-		expect(html).toContain('rel="manifest"');
-		expect(html).toContain('content="index,follow');
-	});
+describe.each(["/", "/about", "/checks", "/acme/rowcount"])(
+	"the head of %s",
+	(path) => {
+		it("has one title, a description, a canonical link and a social card", async () => {
+			const html = await page(path);
+			expect(html.match(/<title>/g)).toHaveLength(1);
+			expect(html.match(/<h1[ >]/g)).toHaveLength(1);
+			const description = attr(
+				html,
+				/<meta name="description" content="([^"]+)"/,
+			);
+			expect(description?.length).toBeGreaterThan(50);
+			expect(description?.length).toBeLessThanOrEqual(160);
+			expect(attr(html, /<link rel="canonical" href="([^"]+)"/)).toBe(
+				`https://tool.test${path}`,
+			);
+			expect(attr(html, /<meta property="og:image" content="([^"]+)"/)).toBe(
+				"https://tool.test/og.png",
+			);
+			expect(html).toContain(
+				'<meta name="twitter:card" content="summary_large_image">',
+			);
+			expect(html).toContain('<html lang="en">');
+			expect(html).toContain('rel="manifest"');
+			expect(html).toContain('content="index,follow');
+		});
 
-	it("has JSON-LD that parses, with the site, its publisher and the app", async () => {
-		const json = attr(
-			await page(path),
-			/<script type="application\/ld\+json">(.+?)<\/script>/s,
-		);
-		const ld = JSON.parse(json as string) as {
-			"@graph": { "@type": string }[];
-		};
-		const types = ld["@graph"].map((n) => n["@type"]);
-		expect(types).toEqual(
-			expect.arrayContaining(["WebSite", "Organization", "WebApplication"]),
-		);
-		if (path === "/about") expect(types).toContain("FAQPage");
-		if (path !== "/") expect(types).toContain("BreadcrumbList");
-	});
-});
+		it("has JSON-LD that parses, with the site, its publisher and the app", async () => {
+			const json = attr(
+				await page(path),
+				/<script type="application\/ld\+json">(.+?)<\/script>/s,
+			);
+			const ld = JSON.parse(json as string) as {
+				"@graph": { "@type": string }[];
+			};
+			const types = ld["@graph"].map((n) => n["@type"]);
+			expect(types).toEqual(
+				expect.arrayContaining(["WebSite", "Organization", "WebApplication"]),
+			);
+			if (path === "/about") expect(types).toContain("FAQPage");
+			if (path !== "/") expect(types).toContain("BreadcrumbList");
+		});
+	},
+);
 
 describe("files for crawlers", () => {
 	it("robots.txt names the AI answer crawlers, keeps out the API and points at the sitemap", async () => {
@@ -82,15 +88,16 @@ describe("files for crawlers", () => {
 		expect(robots).toContain("Sitemap: https://tool.test/sitemap.xml");
 	});
 
-	it("sitemap.xml lists the home page, about and the examples", async () => {
+	it("sitemap.xml lists the home page, about, the checks and the example repositories", async () => {
 		const res = await app.request("/sitemap.xml");
 		expect(res.headers.get("content-type")).toContain("application/xml");
 		const xml = await res.text();
 		expect(xml).toContain(
 			"<loc>https://tool.test/</loc><lastmod>2026-10-28</lastmod>",
 		);
-		expect(xml).toContain("<loc>https://tool.test/about</loc>");
-		expect(xml.match(/<url>/g)).toHaveLength(2 + SITE.examples.length);
+		expect(xml).toContain("<loc>https://tool.test/checks</loc>");
+		expect(xml).toContain("<loc>https://tool.test/flisk-sh/flisk</loc>");
+		expect(xml.match(/<url>/g)).toHaveLength(3 + SITE.examples.length);
 	});
 
 	it("llms.txt, the manifest and security.txt", async () => {
@@ -113,11 +120,13 @@ describe("files for crawlers", () => {
 		).toBe("image/x-icon");
 	});
 
-	it("keeps the not-found page out of the index and answers 404", async () => {
-		const res = await app.request("/nope/nothing-here");
-		expect(res.status).toBe(404);
-		expect(await res.text()).toContain(
-			'<meta name="robots" content="noindex">',
-		);
+	it("keeps not-found and error pages out of the index and answers 404", async () => {
+		for (const path of ["/a/b/c", "/nope/nothing-here"]) {
+			const res = await app.request(path);
+			expect([path, res.status]).toEqual([path, 404]);
+			expect(await res.text()).toContain(
+				'<meta name="robots" content="noindex">',
+			);
+		}
 	});
 });
