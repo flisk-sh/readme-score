@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { GitHubError, loadRepo, parseRepo, specPath } from "../src/github";
 import { RepoLoader } from "../src/loader";
+import { score } from "../src/readme/score";
 import { fakeGitHub, ROWCOUNT } from "./helpers";
 
 describe("parseRepo", () => {
@@ -148,16 +149,49 @@ describe("loadRepo", () => {
 			status: 422,
 			message: "a/b has no README in .github/, the root or docs/.",
 		});
-		const limited = fakeGitHub([ROWCOUNT], { "https://api.github.com/": 403 });
+		// With the API spent and the raw host failing too, the answer says why.
+		const limited = fakeGitHub([ROWCOUNT], {
+			"https://api.github.com/": 403,
+			"https://raw.githubusercontent.com/": 429,
+		});
 		const error = await loadRepo(
 			{ owner: "acme", name: "rowcount" },
 			{ fetch: limited.fetch },
 		).catch((e) => e);
 		expect(error).toBeInstanceOf(GitHubError);
 		expect([error.status, error.message]).toEqual([
-			503,
-			"This server has used up its GitHub API calls until 00:00 UTC. Paste the README instead.",
+			404,
+			"No README found for acme/rowcount, or it is not a public repository.",
 		]);
+	});
+
+	it("reads the raw files at HEAD when the API limit is spent, and skips the checks that need the tree", async () => {
+		const gh = fakeGitHub([ROWCOUNT], { "https://api.github.com/": 403 });
+		const input = await loadRepo(
+			{ owner: "acme", name: "rowcount" },
+			{ fetch: gh.fetch },
+		);
+		expect([
+			input.readmePath,
+			input.repo?.ref,
+			input.repo?.sha,
+			input.paths,
+		]).toEqual(["README.md", "HEAD", "HEAD", undefined]);
+		expect(input.manifests?.map((m) => m.path)).toEqual(["package.json"]);
+		expect(input.withoutTree).toBe(
+			"GitHub's API limit for this server is used up",
+		);
+		const r = score(input);
+		const byId = Object.fromEntries(
+			r.groups.flatMap((g) => g.checks).map((c) => [c.id, c]),
+		);
+		expect(byId["links.files"].measured).toBe(
+			"not checked: GitHub's API limit for this server is used up",
+		);
+		expect(byId["tagline.distinct"].measured).toBe(
+			"1 wording across 2 sources",
+		);
+		expect(r.note).toBe("GitHub's API limit for this server is used up");
 	});
 
 	it("sends the token to the API only", async () => {

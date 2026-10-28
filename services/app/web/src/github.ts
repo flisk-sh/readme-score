@@ -72,6 +72,8 @@ export class GitHubError extends Error {
 		message: string,
 		/** The status the page answers with: 404 not found, 422 no README, 503 rate limit or GitHub down. */
 		readonly status: 404 | 422 | 503,
+		/** True when GitHub's API limit for this server is used up, so the raw files are read instead. */
+		readonly rateLimited = false,
 	) {
 		super(message);
 	}
@@ -104,9 +106,97 @@ async function pool<T, R>(
 	return out;
 }
 
+/**
+ * The repository's files for the checks. When GitHub's API limit for this server is used up (an IP shared with other
+ * hosts can spend it before this server asks), the README and manifests are read from raw.githubusercontent.com at
+ * the ref instead, which that limit does not count. That read has no file tree and no About description, so the checks
+ * that need them are skipped and the report says why.
+ */
 export async function loadRepo(
 	spec: RepoSpec,
 	options: GitHubOptions = {},
+): Promise<ReadmeInput> {
+	try {
+		return await loadFromApi(spec, options);
+	} catch (e) {
+		if (e instanceof GitHubError && e.rateLimited)
+			return loadFromRaw(spec, options);
+		throw e;
+	}
+}
+
+/** Where a README is looked for without a file tree, in GitHub's order of folders, the common spellings first. */
+export const RAW_README_PATHS = [
+	".github/README.md",
+	"README.md",
+	"readme.md",
+	"Readme.md",
+	"README.markdown",
+	"README",
+	"docs/README.md",
+];
+const RAW_EXTRAS = [...ROOT_MANIFESTS, "llms.txt", "docs/llms.txt"];
+
+async function loadFromRaw(
+	spec: RepoSpec,
+	options: GitHubOptions,
+): Promise<ReadmeInput> {
+	const get = options.fetch ?? fetch;
+	const timeout = options.timeoutMs ?? 10_000;
+	const ref = spec.ref ?? "HEAD";
+	const raw = async (path: string): Promise<TextFile | null> => {
+		const url = `${RAW}/${spec.owner}/${spec.name}/${ref.split("/").map(encodeURIComponent).join("/")}/${path.split("/").map(encodeURIComponent).join("/")}`;
+		try {
+			const res = await get(url, {
+				headers: {
+					"user-agent":
+						"readme-score (+https://github.com/flisk-sh/readme-score)",
+				},
+				signal: AbortSignal.timeout(timeout),
+			});
+			if (
+				!res.ok ||
+				Number(res.headers.get("content-length") ?? 0) > MAX_FILE_BYTES
+			)
+				return null;
+			const text = await res.text();
+			return text.length > MAX_FILE_BYTES ? null : { path, text };
+		} catch {
+			return null;
+		}
+	};
+	let readme: TextFile | null = null;
+	for (const path of RAW_README_PATHS) {
+		readme = await raw(path);
+		if (readme) break;
+	}
+	if (!readme)
+		throw new GitHubError(
+			`No README found for ${spec.owner}/${spec.name}${spec.ref ? ` at ${spec.ref}` : ""}, or it is not a public repository.`,
+			404,
+		);
+	const extras = (await pool(RAW_EXTRAS, 6, raw)).filter(
+		(f): f is TextFile => f !== null,
+	);
+	return {
+		readme: readme.text,
+		readmePath: readme.path,
+		repo: {
+			owner: spec.owner,
+			name: spec.name,
+			ref,
+			sha: ref,
+			description: null,
+		},
+		withoutTree: "GitHub's API limit for this server is used up",
+		manifests: extras.filter((f) => ROOT_MANIFESTS.includes(f.path)),
+		llms: extras.filter((f) => f.path.endsWith("llms.txt")),
+	};
+}
+
+async function loadFromApi(
+	spec: RepoSpec,
+	options: GitHubOptions,
 ): Promise<ReadmeInput> {
 	const get = options.fetch ?? fetch;
 	const timeout = options.timeoutMs ?? 10_000;
@@ -144,6 +234,7 @@ export async function loadRepo(
 			throw new GitHubError(
 				`This server has used up its GitHub API calls${at}. Paste the README instead.`,
 				503,
+				true,
 			);
 		}
 		if (!res.ok)

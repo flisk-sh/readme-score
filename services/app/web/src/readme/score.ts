@@ -120,6 +120,8 @@ export interface ReadmeInput {
 	paths?: Set<string>;
 	/** True when GitHub returned only part of the tree. */
 	truncated?: boolean;
+	/** Why there is no file tree although the README came from a repository; the checks that need it say so. */
+	withoutTree?: string;
 	/** package.json, pyproject.toml, Cargo.toml and composer.json files whose description and type count. */
 	manifests?: TextFile[];
 	llms?: TextFile[];
@@ -138,6 +140,8 @@ export interface Report {
 	counts: { passed: number; failed: number; skipped: number };
 	readme: { path: string; lines: number };
 	repo?: RepoInfo;
+	/** Why some checks were skipped although the README came from a repository. */
+	note?: string;
 }
 
 export const gradeOf = (score: number) =>
@@ -439,7 +443,9 @@ function quickstartGroup(
 				max: POINTS.translations,
 				measured: input.paths
 					? "no translated READMEs"
-					: "not checked: needs the repository",
+					: input.withoutTree
+						? `not checked: ${input.withoutTree}`
+						: "not checked: needs the repository",
 				limit: "0; folder names may be translated",
 			}),
 		);
@@ -459,7 +465,9 @@ function linksGroup(input: ReadmeInput): Group {
 			title: "Relative links resolve",
 			pass: null,
 			max: POINTS.fileLinks,
-			measured: "not checked: needs the repository",
+			measured: input.withoutTree
+				? `not checked: ${input.withoutTree}`
+				: "not checked: needs the repository",
 			limit: "0 broken",
 		});
 	else if (input.truncated)
@@ -526,7 +534,9 @@ function taglineGroup(input: ReadmeInput, names: string[]): Group {
 		readmePath: input.readmePath,
 		...(input.manifests ? { manifests: input.manifests } : {}),
 		...(input.llms ? { llms: input.llms } : {}),
-		...(input.repo ? { githubDescription: input.repo.description } : {}),
+		...(input.repo && !input.withoutTree
+			? { githubDescription: input.repo.description }
+			: {}),
 	});
 	const found = sources.filter((s) => s.text);
 	const g = taglineGroups(sources, names);
@@ -618,6 +628,7 @@ export function score(input: ReadmeInput): Report {
 			skipped: all.filter((c) => c.pass === null).length,
 		},
 		readme: { path: input.readmePath, lines: input.readme.split("\n").length },
+		...(input.withoutTree ? { note: input.withoutTree } : {}),
 		...(input.repo ? { repo: input.repo } : {}),
 	};
 }

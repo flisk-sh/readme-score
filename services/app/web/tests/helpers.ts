@@ -64,8 +64,14 @@ export function fakeGitHub(
 					],
 				});
 			}
-			const raw = `https://raw.githubusercontent.com/${r.owner}/${r.name}/${sha}/`;
-			if (url.startsWith(raw)) {
+			// Raw files answer at the commit, and at HEAD as GitHub's raw host does.
+			const raw = [sha, "HEAD"]
+				.map(
+					(ref) =>
+						`https://raw.githubusercontent.com/${r.owner}/${r.name}/${ref}/`,
+				)
+				.find((prefix) => url.startsWith(prefix));
+			if (raw) {
 				const path = decodeURIComponent(url.slice(raw.length));
 				const body = r.files[path];
 				return body === undefined

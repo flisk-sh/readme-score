@@ -263,7 +263,7 @@ export function resultPage(
 	const root = rootOf(base);
 	const r = report;
 	const repoLink = r.repo
-		? `<a href="https://github.com/${r.repo.owner}/${r.repo.name}/tree/${r.repo.sha}">${esc(`${r.repo.owner}/${r.repo.name}`)}</a> at <code>${r.repo.sha.slice(0, 7)}</code>${r.repo.ref !== r.repo.sha ? ` (${esc(r.repo.ref)})` : ""} · ${esc(r.readme.path)}`
+		? `<a href="https://github.com/${r.repo.owner}/${r.repo.name}/tree/${r.repo.sha}">${esc(`${r.repo.owner}/${r.repo.name}`)}</a> at <code>${esc(/^[0-9a-f]{40}$/.test(r.repo.sha) ? r.repo.sha.slice(0, 7) : r.repo.sha)}</code>${r.repo.ref !== r.repo.sha ? ` (${esc(r.repo.ref)})` : ""} · ${esc(r.readme.path)}${r.note ? `<br>${esc(r.note)}: relative links, translations and the GitHub description are not checked` : ""}`
 		: `The pasted README, ${r.readme.lines} lines`;
 	const types = opts.path
 		? `<p class="types">Scored as ${PROJECT_TYPES.map((t) =>
