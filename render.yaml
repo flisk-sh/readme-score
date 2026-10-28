@@ -12,11 +12,11 @@ services:
     # Your own domain: uncomment and put it in PUBLIC_URL too (`bun run rename` does both). Without a payment method
     # on file, Render allows two custom domains per workspace.
     domains:
-      - readme.flisk.ai
+      - readme.flisk.si
     envVars:
       # The address people use. Without a custom domain, your service's https://<name>.onrender.com/.
       - key: PUBLIC_URL
-        value: https://readme.flisk.ai/
+        value: https://readme.flisk.si/
       - key: TRUST_PROXY
         value: last-forwarded
       # Optional: raises GitHub's limit for this server from 60 to 5,000 API calls an hour (3 per repository read).

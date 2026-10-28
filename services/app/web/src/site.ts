@@ -12,7 +12,7 @@ export const SITE = {
 	description:
 		"Enter a GitHub repo or paste a README: a score out of 100, the sections found and missing, and a fix for each miss. No AI: same README, same score.",
 	/** Where the site lives online, ending in a slash. PUBLIC_URL overrides it at run time. */
-	url: "https://readme.flisk.ai/",
+	url: "https://readme.flisk.si/",
 	repo: "https://github.com/flisk-sh/readme-score",
 	lang: "en",
 	locale: "en_US",

@@ -3,7 +3,7 @@
 ![The result for flisk-sh/flisk: 92 out of 100, grade A, and the two failing checks first, each with its line and its fix](docs/result.png)
 
 Enter a GitHub repository or paste a README, and get a score out of 100, the sections found and missing, and a fix for
-each miss. It runs at [readme.flisk.ai](https://readme.flisk.ai/).
+each miss. It runs at [readme.flisk.si](https://readme.flisk.si/).
 
 ```bash
 git clone https://github.com/flisk-sh/readme-score
@@ -31,7 +31,7 @@ reviews, whose score moves between runs and whose advice points at no line.
 ## What it checks
 
 Six groups, 100 points. A check with nothing to look at (a pasted README has no file tree) is left out, and the score
-is the points earned over the points that count. [`/checks`](https://readme.flisk.ai/checks) lists every threshold,
+is the points earned over the points that count. [`/checks`](https://readme.flisk.si/checks) lists every threshold,
 weight and synonym, read from the code that scores.
 
 | Group | Points | What it looks at | From Flisk's scoreboard |
@@ -90,9 +90,9 @@ All optional.
 
 ## Examples
 
-- Result pages: [flisk-sh/flisk](https://readme.flisk.ai/flisk-sh/flisk),
-  [honojs/hono](https://readme.flisk.ai/honojs/hono) as a library,
-  [BurntSushi/ripgrep](https://readme.flisk.ai/BurntSushi/ripgrep) as a CLI tool.
+- Result pages: [flisk-sh/flisk](https://readme.flisk.si/flisk-sh/flisk),
+  [honojs/hono](https://readme.flisk.si/honojs/hono) as a library,
+  [BurntSushi/ripgrep](https://readme.flisk.si/BurntSushi/ripgrep) as a CLI tool.
 - The report as JSON, and the failing checks alone:
 
   ```bash
@@ -105,8 +105,8 @@ All optional.
   curl -s localhost:4000/api/score -H 'content-type: application/json' -d '{"readme": "# slugkit\n\nTurn titles into slugs.\n", "type": "library"}' | jq .score
   ```
 
-- The badge in your own README: `[![README score](https://readme.flisk.ai/badge/<owner>/<repo>.svg)](https://readme.flisk.ai/<owner>/<repo>)`
-- From an AI assistant: `claude mcp add --transport http readme-score https://readme.flisk.ai/mcp`, then ask it to score
+- The badge in your own README: `[![README score](https://readme.flisk.si/badge/<owner>/<repo>.svg)](https://readme.flisk.si/<owner>/<repo>)`
+- From an AI assistant: `claude mcp add --transport http readme-score https://readme.flisk.si/mcp`, then ask it to score
   a repository.
 
 ## Troubleshooting
@@ -137,7 +137,7 @@ It exits 1 when the first-screen, readability or tagline results differ.
 
 ## Deploy
 
-One free Render web service from [`render.yaml`](render.yaml), with readme.flisk.ai as a CNAME on Cloudflare. The
+One free Render web service from [`render.yaml`](render.yaml), with readme.flisk.si as a CNAME on Cloudflare. The
 steps, the token and Render's two-domain limit are in [DEPLOY.md](DEPLOY.md).
 
 ## Roadmap
