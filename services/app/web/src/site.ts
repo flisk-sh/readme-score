@@ -29,7 +29,7 @@ export const SITE = {
 	faq: [
 		{
 			q: "How is the README score worked out?",
-			a: "From 23 checks in six groups: the sections a reader expects for your kind of project (40 points), the first screen (20), readability (10), the quickstart (10), links (10) and the tagline (10). A check with nothing to look at is left out, and the score is the points earned over the points that count. Every threshold is listed on the checks page.",
+			a: "From 25 checks in seven groups: the sections a reader expects for your kind of project (35 points), the first screen (20), readability (10), the quickstart (10), links (10), the tagline (5), and whether the product's website says the same as the README (10). A check with nothing to look at is left out, and the score is the points earned over the points that count. Every threshold is listed on the checks page.",
 		},
 		{
 			q: "Is AI involved?",

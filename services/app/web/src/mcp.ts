@@ -24,6 +24,7 @@ export function readmeTools(
 		repo?: string;
 		readme?: string;
 		type?: string;
+		website?: string;
 	}) => Promise<string | { error: string }>,
 ): Tool[] {
 	return [
@@ -32,7 +33,7 @@ export function readmeTools(
 				name: "score_readme",
 				title: "Score a README",
 				description:
-					"Scores a README out of 100 with deterministic checks (no model): the sections a reader expects for the project type, the first screen, readability, the quickstart, links and the tagline. Answers the score, the failing checks with their line and a fix each, and a link to the full report. Give a public GitHub repository, or the README's Markdown.",
+					"Scores a README out of 100 with deterministic checks (no model): the sections a reader expects for the project type, the first screen, readability, the quickstart, links, the tagline, and whether the website says the same. Answers the score, the failing checks with their line and a fix each, and a link to the full report. Give a public GitHub repository, or the README's Markdown.",
 				inputSchema: {
 					type: "object",
 					properties: {
@@ -52,6 +53,11 @@ export function readmeTools(
 							description:
 								"The project type to score against; detected from the files when left out",
 						},
+						website: {
+							type: "string",
+							description:
+								"With readme: the product's website, to compare its headline and description with the README's. A repository's own homepage is read without it",
+						},
 					},
 				},
 				annotations: { readOnlyHint: true, openWorldHint: true },
@@ -66,6 +72,9 @@ export function readmeTools(
 					...(repo ? { repo } : {}),
 					...(readme ? { readme } : {}),
 					...(typeof args.type === "string" ? { type: args.type } : {}),
+					...(typeof args.website === "string"
+						? { website: args.website }
+						: {}),
 				});
 			},
 		},

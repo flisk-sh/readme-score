@@ -7,6 +7,7 @@
 import { translationPaths } from "./readme/quickstart";
 import type { ReadmeInput } from "./readme/score";
 import type { TextFile } from "./readme/tagline";
+import { fetchWebsite, type WebsiteOptions } from "./website";
 
 export const API = "https://api.github.com";
 export const RAW = "https://raw.githubusercontent.com";
@@ -84,6 +85,42 @@ export interface GitHubOptions {
 	token?: string;
 	fetch?: typeof fetch;
 	timeoutMs?: number;
+	/** How the product's website is read; false leaves it out. */
+	website?: WebsiteOptions | false;
+}
+
+/** The website a repository names: its GitHub homepage, else "homepage" in the root package.json. */
+export function homepageOf(
+	githubHomepage: string | null | undefined,
+	manifests: TextFile[],
+): string | null {
+	if (githubHomepage?.trim()) return githubHomepage.trim();
+	const pkg = manifests.find((m) => m.path === "package.json");
+	try {
+		const h = pkg
+			? (JSON.parse(pkg.text) as { homepage?: unknown }).homepage
+			: undefined;
+		return typeof h === "string" &&
+			/^https?:\/\//i.test(h) &&
+			!/github\.com\//i.test(h)
+			? h
+			: null;
+	} catch {
+		return null;
+	}
+}
+
+/** Adds the product's website to a repository's files, when it names one and reading websites is on. */
+async function withWebsite(
+	input: ReadmeInput,
+	homepage: string | null,
+	options: GitHubOptions,
+): Promise<ReadmeInput> {
+	if (!homepage || options.website === false) return input;
+	return {
+		...input,
+		website: await fetchWebsite(homepage, options.website ?? {}),
+	};
 }
 
 /** Runs `task` on each item, at most `limit` at once, keeping the order. */
@@ -178,20 +215,25 @@ async function loadFromRaw(
 	const extras = (await pool(RAW_EXTRAS, 6, raw)).filter(
 		(f): f is TextFile => f !== null,
 	);
-	return {
-		readme: readme.text,
-		readmePath: readme.path,
-		repo: {
-			owner: spec.owner,
-			name: spec.name,
-			ref,
-			sha: ref,
-			description: null,
+	const manifests = extras.filter((f) => ROOT_MANIFESTS.includes(f.path));
+	return withWebsite(
+		{
+			readme: readme.text,
+			readmePath: readme.path,
+			repo: {
+				owner: spec.owner,
+				name: spec.name,
+				ref,
+				sha: ref,
+				description: null,
+			},
+			withoutTree: "GitHub's API limit for this server is used up",
+			manifests,
+			llms: extras.filter((f) => f.path.endsWith("llms.txt")),
 		},
-		withoutTree: "GitHub's API limit for this server is used up",
-		manifests: extras.filter((f) => ROOT_MANIFESTS.includes(f.path)),
-		llms: extras.filter((f) => f.path.endsWith("llms.txt")),
-	};
+		homepageOf(null, manifests),
+		options,
+	);
 }
 
 async function loadFromApi(
@@ -253,6 +295,7 @@ async function loadFromApi(
 		owner: { login: string };
 		default_branch: string;
 		description: string | null;
+		homepage?: string | null;
 	}>(base);
 	const ref = spec.ref ?? repo.default_branch;
 	const sha = (
@@ -363,20 +406,25 @@ async function loadFromApi(
 			return false;
 		}
 	});
-	return {
-		readme: readme.text,
-		readmePath,
-		repo: {
-			owner: repo.owner.login,
-			name: repo.name,
-			ref,
-			sha,
-			description: repo.description,
+	const manifests = [...pick(ROOT_MANIFESTS), ...published];
+	return withWebsite(
+		{
+			readme: readme.text,
+			readmePath,
+			repo: {
+				owner: repo.owner.login,
+				name: repo.name,
+				ref,
+				sha,
+				description: repo.description,
+			},
+			paths,
+			truncated: tree.truncated,
+			manifests,
+			llms: pick(llmsPaths),
+			translations: pick(translations),
 		},
-		paths,
-		truncated: tree.truncated,
-		manifests: [...pick(ROOT_MANIFESTS), ...published],
-		llms: pick(llmsPaths),
-		translations: pick(translations),
-	};
+		homepageOf(repo.homepage, manifests),
+		options,
+	);
 }

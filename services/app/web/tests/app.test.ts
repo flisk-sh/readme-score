@@ -152,6 +152,7 @@ describe("API, badge and MCP", () => {
 			"quickstart",
 			"links",
 			"tagline",
+			"website",
 		]);
 		expect((await app.request("/api/score?repo=nope")).status).toBe(400);
 		expect((await app.request("/api/score?repo=acme/missing")).status).toBe(

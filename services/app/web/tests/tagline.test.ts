@@ -100,7 +100,7 @@ describe("tagline", () => {
 		]);
 	});
 
-	it("scores one wording 10, two 5 and three 0, and skips a single source", () => {
+	it("scores one wording 5, two 2.5 and three 0, and skips a single source", () => {
 		const check = (
 			manifests: { path: string; text: string }[],
 			description?: string | null,
@@ -125,11 +125,11 @@ describe("tagline", () => {
 		expect(
 			check([{ path: "package.json", text: pkg("Rowcount: count rows.") }])
 				?.points,
-		).toBe(10);
+		).toBe(5);
 		const two = check([{ path: "package.json", text: pkg("Counts lines.") }]);
 		expect([two?.pass, two?.points, two?.measured]).toEqual([
 			false,
-			5,
+			2.5,
 			"2 wordings across 2 sources",
 		]);
 		expect(two?.fix).toBe(

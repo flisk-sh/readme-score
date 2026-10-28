@@ -42,11 +42,19 @@ import {
 	WEIGHTS,
 } from "./sections";
 import { type TextFile, groups as taglineGroups, taglines } from "./tagline";
+import {
+	headlineMatch,
+	headlines,
+	pitchOverlap,
+	readmePitch,
+	WEBSITE_PITCH_MIN_OVERLAP,
+	type Website,
+} from "./website";
 
 /** Points per check. With every check applicable they add up to 100. */
 export const POINTS = {
 	/** Shared by the sections in proportion to their weight for the project type. */
-	sections: 40,
+	sections: 35,
 	/** Each of the five first-screen checks. */
 	firstScreenEach: 4,
 	readability: 10,
@@ -55,10 +63,14 @@ export const POINTS = {
 	translations: 5,
 	fileLinks: 5,
 	anchors: 5,
-	tagline: 10,
+	tagline: 5,
+	/** The website's headline uses the README H1's wording. */
+	websiteHeadline: 5,
+	/** The website's description uses the README pitch's words; partial points below WEBSITE_PITCH_MIN_OVERLAP. */
+	websitePitch: 5,
 } as const;
 /** Tagline points by how many different wordings there are: one, two, three or more. */
-export const TAGLINE_POINTS_BY_DISTINCT = [10, 5, 0] as const;
+export const TAGLINE_POINTS_BY_DISTINCT = [5, 2.5, 0] as const;
 /** The lowest score for each grade. */
 export const GRADES: [number, string][] = [
 	[90, "A"],
@@ -120,6 +132,8 @@ export interface ReadmeInput {
 	paths?: Set<string>;
 	/** True when GitHub returned only part of the tree. */
 	truncated?: boolean;
+	/** The product's website as read for the positioning checks, the reason it could not be read, or none. */
+	website?: Website | { url: string; error: string };
 	/** Why there is no file tree although the README came from a repository; the checks that need it say so. */
 	withoutTree?: string;
 	/** package.json, pyproject.toml, Cargo.toml and composer.json files whose description and type count. */
@@ -230,10 +244,19 @@ const check = (c: Omit<Check, "points"> & { points?: number }): Check => ({
 function sectionGroup(input: ReadmeInput, type: ProjectType): Group {
 	const results = sections(input.readme, type);
 	const total = results.reduce((n, r) => n + r.weight, 0);
+	// Each section's share in tenths of a point, the tenths left over by rounding down going to the largest remainders
+	// (the earlier section on a tie), so the shares always add up to POINTS.sections exactly.
+	const exact = results.map((r) => (POINTS.sections * 10 * r.weight) / total);
+	const tenths = exact.map(Math.floor);
+	const order = exact
+		.map((x, i) => [x - Math.floor(x), i] as const)
+		.sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+	const left = POINTS.sections * 10 - tenths.reduce((n, t) => n + t, 0);
+	for (let k = 0; k < left; k++) tenths[order[k][1]]++;
 	const name = displayName(input);
-	const checks = results.map((r) => {
+	const checks = results.map((r, i) => {
 		const spec = SECTIONS[r.id];
-		const max = (POINTS.sections * r.weight) / total;
+		const max = tenths[i] / 10;
 		const heading = spec.heading.replace("{name}", name);
 		const at = r.insertAt;
 		return check({
@@ -573,6 +596,108 @@ function taglineGroup(input: ReadmeInput, names: string[]): Group {
 	]);
 }
 
+/** Where a website comes from, for the fix when there is none. */
+const NO_WEBSITE =
+	'no website: set the repository\'s homepage on GitHub (the gear next to About) or "homepage" in package.json';
+
+function websiteGroup(input: ReadmeInput, names: string[]): Group {
+	const site = input.website;
+	const h1 = firstH1(input.readme);
+	const limits = {
+		headline: "the README H1's wording",
+		pitch: `${Math.round(WEBSITE_PITCH_MIN_OVERLAP * 100)}% of the website's key words`,
+	};
+	if (!site || "error" in site) {
+		const why = site ? `not checked: ${site.url} ${site.error}` : NO_WEBSITE;
+		return finish("website", "Website", [
+			check({
+				id: "website.headline",
+				title: "Website headline matches the README",
+				pass: null,
+				max: POINTS.websiteHeadline,
+				measured: why,
+				limit: limits.headline,
+			}),
+			check({
+				id: "website.pitch",
+				title: "Website description matches the README pitch",
+				pass: null,
+				max: POINTS.websitePitch,
+				measured: why,
+				limit: limits.pitch,
+			}),
+		]);
+	}
+	const shown = site.ogTitle ?? site.title ?? site.h1;
+	const matched = h1 ? headlineMatch(h1, site, names) : null;
+	const headline = check({
+		id: "website.headline",
+		title: "Website headline matches the README",
+		pass: h1 && headlines(site).length ? matched !== null : null,
+		max: POINTS.websiteHeadline,
+		measured: !h1
+			? "the README has no H1"
+			: !shown
+				? `${site.url} has no <title>, og:title or <h1>`
+				: matched
+					? `"${matched}"`
+					: `"${shown}" differs`,
+		limit: limits.headline,
+		...(h1
+			? { line: input.readme.split("\n").findIndex((l) => l.includes(h1)) + 1 }
+			: {}),
+		fix: `Use one headline: the README H1 says "${h1 ?? ""}", the website says "${shown ?? ""}". Change one to the other's wording (the website's <title> and og:title, or the H1).`,
+		findings: [
+			...(site.title ? [{ text: `<title>: "${site.title}"` }] : []),
+			...(site.ogTitle && site.ogTitle !== site.title
+				? [{ text: `og:title: "${site.ogTitle}"` }]
+				: []),
+			...(site.h1 ? [{ text: `<h1>: "${site.h1}"` }] : []),
+		],
+	});
+	const pitch = readmePitch(input.readme);
+	const text = site.description ?? site.ogDescription;
+	const o = text ? pitchOverlap(pitch.text, text, names) : null;
+	const pitchCheck = check({
+		id: "website.pitch",
+		title: "Website description matches the README pitch",
+		pass: o ? o.share >= WEBSITE_PITCH_MIN_OVERLAP : null,
+		max: POINTS.websitePitch,
+		points: o
+			? POINTS.websitePitch * Math.min(1, o.share / WEBSITE_PITCH_MIN_OVERLAP)
+			: 0,
+		measured: o
+			? `${Math.round(o.share * 100)}% of the website's key words`
+			: `${site.url} has no meta description`,
+		limit: limits.pitch,
+		line: pitch.line,
+		fix: "Say the same thing in both places: use the website description's words in the README's opening paragraph, or change the description to the README's.",
+		...(o
+			? {
+					findings: [
+						{ text: `Website description: "${text}"` },
+						...(o.onlyWebsite.length
+							? [
+									{
+										text: `Only on the website: ${o.onlyWebsite.slice(0, 15).join(", ")}`,
+									},
+								]
+							: []),
+						...(o.onlyReadme.length
+							? [
+									{
+										line: pitch.line,
+										text: `Only in the README pitch: ${o.onlyReadme.slice(0, 15).join(", ")}`,
+									},
+								]
+							: []),
+					],
+				}
+			: {}),
+	});
+	return finish("website", `Website: ${site.url}`, [headline, pitchCheck]);
+}
+
 function finish(id: string, title: string, checks: Check[]): Group {
 	const counted = checks.filter((c) => c.pass !== null);
 	return {
@@ -609,6 +734,7 @@ export function score(input: ReadmeInput): Report {
 		quickstartGroup(input, names, type),
 		linksGroup(input),
 		taglineGroup(input, names),
+		websiteGroup(input, names),
 	];
 	const all = groups.flatMap((g) => g.checks);
 	const counted = all.filter((c) => c.pass !== null);

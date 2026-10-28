@@ -26,22 +26,24 @@ reviews, whose score moves between runs and whose advice points at no line.
 - A line for every finding, linked to that line on GitHub at the commit that was scored.
 - A concrete fix for every miss: the heading to add and where, the command to move, the link to correct.
 - Weights for the kind of project: a CLI tool, a library, a full-stack app or a backend API.
+- A comparison with the product's website: the same headline, and the words of the README's pitch, listed where they differ.
 - A JSON API, a score badge and an MCP tool, none needing a key.
 
 ## What it checks
 
-Six groups, 100 points. A check with nothing to look at (a pasted README has no file tree) is left out, and the score
+Seven groups, 100 points. A check with nothing to look at (a pasted README has no file tree) is left out, and the score
 is the points earned over the points that count. [`/checks`](https://readme.flisk.si/checks) lists every threshold,
 weight and synonym, read from the code that scores.
 
 | Group | Points | What it looks at | From Flisk's scoreboard |
 | --- | --- | --- | --- |
-| Sections | 40 | Overview, key features, prerequisites, installation, usage, configuration, examples, troubleshooting, roadmap, contributing, license: headings matched against fixed synonym lists, weighted for a CLI tool, a library, a full-stack app or a backend API | new |
+| Sections | 35 | Overview, key features, prerequisites, installation, usage, configuration, examples, troubleshooting, roadmap, contributing, license: headings matched against fixed synonym lists, weighted for a CLI tool, a library, a full-stack app or a backend API | new |
 | First screen | 20 | A title within 5 non-empty lines, an install command within 40 lines, a picture within 20, at most 6 badges and 250 words before the first code block | `readme-first-screen` |
 | Readability | 10 | Flesch reading ease of the prose: 60 or more for every point, 30 or less for none; the longest sentences and infrastructure words listed | `readme-readability` |
 | Quickstart | 10 | One shell block that installs the project, at most 6 commands, and translated READMEs that give the same commands | `steps-to-first-healthy`, `translation-drift` |
 | Links | 10 | Relative links that name a file in the repository with the right case, and #anchors that match a heading | `doc-links` |
-| Tagline | 10 | One description in the README H1, the package manifests, llms.txt and the GitHub About box | `tagline-consistency` |
+| Tagline | 5 | One description in the README H1, the package manifests, llms.txt and the GitHub About box | `tagline-consistency` |
+| Website | 10 | The product's website (the repository's homepage, or `homepage` in package.json): its `<title>`, `og:title` or `<h1>` uses the README H1's wording, and its meta description uses at least half the key words of the README's opening | new |
 
 The checks are ported from the scoreboard in [flisk-sh/flisk](https://github.com/flisk-sh/flisk/tree/main/scripts/scores)
 and generalised: any package manager's install command instead of Flisk's, any manifest instead of Flisk's two. The
@@ -68,8 +70,8 @@ It prints `{"status":"ok","service":"readme-score"}`. The repository keeps the l
 | Address | What it answers |
 | --- | --- |
 | `/<owner>/<repo>` | The result page for a public GitHub repository; `/tree/<branch>` after it for a branch, `?type=cli\|library\|app\|api` to score it as another kind of project |
-| `POST /paste` | The result for a pasted README (the form on the home page) |
-| `/api/score?repo=owner/repo` | The same report as JSON; `POST /api/score` with `{"readme": "…", "type": "cli"}` scores Markdown |
+| `POST /paste` | The result for a pasted README (the form on the home page), with an optional `website` to compare |
+| `/api/score?repo=owner/repo` | The same report as JSON; `POST /api/score` with `{"readme": "…", "type": "cli", "website": "https://…"}` scores Markdown |
 | `/badge/<owner>/<repo>.svg` | A badge with the score |
 | `/mcp` | An MCP server (Streamable HTTP) with one tool, `score_readme` |
 

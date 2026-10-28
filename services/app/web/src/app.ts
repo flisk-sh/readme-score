@@ -40,6 +40,7 @@ import {
 } from "./seo";
 import { SITE } from "./site";
 import { VIDEO } from "./video.generated";
+import { fetchWebsite } from "./website";
 
 /** A pasted README larger than this is refused. */
 export const MAX_PASTE_BYTES = 512 * 1024;
@@ -78,6 +79,8 @@ export function createApp(options: AppOptions = {}) {
 	const limit = new RateLimiter(options.callsPerMinute ?? 120, 60 * 1000);
 	const lastmod = (options.builtAt ?? new Date()).toISOString().slice(0, 10);
 	const files = loadAssets();
+	const websiteOptions =
+		options.github?.website === false ? {} : (options.github?.website ?? {});
 	const loader = new RepoLoader(options.github);
 	const app = new Hono();
 
@@ -118,6 +121,29 @@ export function createApp(options: AppOptions = {}) {
 	): Promise<Loaded | undefined> => loader.get(spec, () => limited(c) === 0);
 	const busy =
 		"Too many repositories at once from here, or GitHub is busy. Wait a minute and try again, or paste the README.";
+
+	/**
+	 * The website a pasted README names in the form or the API, read once per request; counted against the client's
+	 * limit (the API call already was, so it passes count = false).
+	 */
+	const pastedWebsite = async (
+		c: Parameters<typeof clientOf>[0],
+		value: unknown,
+		count = true,
+	) => {
+		if (
+			typeof value !== "string" ||
+			!value.trim() ||
+			options.github?.website === false
+		)
+			return undefined;
+		if (count && limited(c) > 0)
+			return {
+				url: value.trim(),
+				error: "not read: too many requests from here",
+			};
+		return fetchWebsite(value.trim(), websiteOptions);
+	};
 
 	app.use("*", async (c, next) => {
 		await next();
@@ -172,11 +198,17 @@ export function createApp(options: AppOptions = {}) {
 		const type = typeParam(
 			typeof body.type === "string" ? body.type : undefined,
 		);
+		const site = await pastedWebsite(c, body.website);
 		c.header("cache-control", "no-store");
 		return c.html(
 			resultPage(
 				baseOf(c),
-				score({ readme, readmePath: "README.md", ...(type ? { type } : {}) }),
+				score({
+					readme,
+					readmePath: "README.md",
+					...(type ? { type } : {}),
+					...(site ? { website: site } : {}),
+				}),
 			),
 		);
 	});
@@ -302,7 +334,7 @@ export function createApp(options: AppOptions = {}) {
 			return c.json({ error: "Too many requests." }, 429, {
 				"retry-after": String(wait),
 			});
-		let body: { readme?: unknown; type?: unknown };
+		let body: { readme?: unknown; type?: unknown; website?: unknown };
 		try {
 			body = await c.req.json();
 		} catch {
@@ -318,11 +350,13 @@ export function createApp(options: AppOptions = {}) {
 		const type = typeParam(
 			typeof body.type === "string" ? body.type : undefined,
 		);
+		const site = await pastedWebsite(c, body.website, false);
 		return c.json(
 			score({
 				readme: body.readme,
 				readmePath: "README.md",
 				...(type ? { type } : {}),
+				...(site ? { website: site } : {}),
 			}),
 		);
 	});
@@ -347,11 +381,15 @@ export function createApp(options: AppOptions = {}) {
 		if (args.readme) {
 			if (args.readme.length > MAX_PASTE_BYTES)
 				return { error: "readme is larger than 512 KB." };
+			const site = args.website
+				? await fetchWebsite(args.website, websiteOptions)
+				: undefined;
 			return summarize(
 				score({
 					readme: args.readme,
 					readmePath: "README.md",
 					...(type ? { type } : {}),
+					...(site ? { website: site } : {}),
 				}),
 			);
 		}

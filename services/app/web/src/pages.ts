@@ -40,9 +40,14 @@ import {
 	WEIGHTS,
 } from "./readme/sections";
 import { fixFirst, headline } from "./readme/summary";
+import {
+	README_PITCH_WORDS,
+	WEBSITE_PITCH_MIN_OVERLAP,
+} from "./readme/website";
 import { SAMPLE_README } from "./sample";
 import { esc, faqJsonLd, head, type PageMeta } from "./seo";
 import { SITE } from "./site";
+import { MAX_REDIRECTS } from "./website";
 
 const STYLE = `
 :root{--bg:${SITE.themeColor.light};--fg:#141413;--muted:#66635c;--line:#e3e0d7;--card:#fff;--sunk:#efede7;--pass:#18794e;--fail:#c22a1f;--skip:#8a857a;--accent:#2d4cc8;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
@@ -127,7 +132,7 @@ const repoForm = (root: string, value = "") =>
 	`<form class="repo" action="${root}/check" method="get" role="search"><input type="text" name="repo" value="${esc(value)}" placeholder="github.com/owner/repo" autocomplete="off" spellcheck="false" required aria-label="GitHub repository"><button type="submit">Score it</button></form>`;
 
 const pasteForm = (root: string, open = false) =>
-	`<details class="paste"${open ? " open" : ""}><summary>Or paste a README</summary><form action="${root}/paste" method="post"><textarea name="readme" required placeholder="# My project" aria-label="README in Markdown"></textarea><div class="row"><select name="type" aria-label="Project type">${typeOptions()}</select><button type="submit">Score the README</button></div></form></details>`;
+	`<details class="paste"${open ? " open" : ""}><summary>Or paste a README</summary><form action="${root}/paste" method="post"><textarea name="readme" required placeholder="# My project" aria-label="README in Markdown"></textarea><input type="text" name="website" placeholder="Website, to compare (optional): https://example.com" aria-label="Product website, optional" autocomplete="url"><div class="row"><select name="type" aria-label="Project type">${typeOptions()}</select><button type="submit">Score the README</button></div></form></details>`;
 
 const chips = (root: string) =>
 	`<p class="chips">${SITE.examples.map((r) => `<a class="chip" href="${root}/${r}">${esc(r)}</a>`).join("")}</p>`;
@@ -186,7 +191,7 @@ ${top[0] ? `<p class="fix"><b>Fix first, line ${top[0].line}:</b> ${esc(top[0].f
 }
 
 const STATS: [string, string][] = [
-	["23", "checks, each pointing at a line"],
+	["25", "checks, each pointing at a line"],
 	[String(SECTION_IDS.length), "sections, matched by fixed synonym lists"],
 	[String(PROJECT_TYPES.length), "project types, each with its own weights"],
 	["0", "models: same README, same score"],
@@ -224,6 +229,11 @@ export function homePage(
 			POINTS.tagline,
 			"One description in the README, the manifests and the GitHub About box",
 		],
+		[
+			"Website",
+			POINTS.websiteHeadline + POINTS.websitePitch,
+			"The product's website: the same headline as the README, and the same words as its pitch",
+		],
 	];
 	return layout(
 		base,
@@ -240,7 +250,7 @@ ${pasteForm(root)}
 <p class="reassure"><b>●</b> No AI · No signup · Every finding names a line</p>
 ${preview()}
 <div class="stats">${STATS.map(([n, t]) => `<div><b>${n}</b><span>${t}</span></div>`).join("")}</div></div></section>
-<div class="wrap"><p class="kick">How it scores</p><h2>Six groups, 100 points, no judgement calls.</h2>
+<div class="wrap"><p class="kick">How it scores</p><h2>Seven groups, 100 points, no judgement calls.</h2>
 <div class="tbl"><table><thead><tr><th>Group</th><th>Points</th><th>What it looks at</th></tr></thead><tbody>${groupRows
 			.map(([g, p, w]) => `<tr><td>${g}</td><td>${p}</td><td>${w}</td></tr>`)
 			.join("")}</tbody></table></div>
@@ -357,6 +367,8 @@ export function checksPage(base: string): string {
 			"TAGLINE_POINTS_BY_DISTINCT",
 			TAGLINE_POINTS_BY_DISTINCT.join(", "),
 		],
+		["Website", "WEBSITE_PITCH_MIN_OVERLAP", String(WEBSITE_PITCH_MIN_OVERLAP)],
+		["Website", "README_PITCH_WORDS", String(README_PITCH_WORDS)],
 		...Object.entries(POINTS).map(([k, v]): [string, string, string] => [
 			"Points",
 			`POINTS.${k}`,
@@ -415,6 +427,14 @@ export function checksPage(base: string): string {
 		[
 			"One tagline everywhere",
 			`The README H1, the descriptions in package.json, pyproject.toml, Cargo.toml and composer.json (and a nested package.json that is published or has a bin), the first > line of llms.txt files and the GitHub About description, compared after dropping case, punctuation, URLs and a leading "<name>:". Points by distinct wordings: ${TAGLINE_POINTS_BY_DISTINCT.join(", ")}.`,
+		],
+		[
+			"Website headline matches the README",
+			'The website is the repository\'s homepage on GitHub, else "homepage" in package.json, or the address given with a pasted README. Its og:title, <title> and first <h1>, whole and split at |, -, —, · and :, are compared with the README H1 after the same normalising as taglines; one must equal it, or hold it whole (or be held by it) when both have three words or more.',
+		],
+		[
+			"Website description matches the README pitch",
+			`The key words of the website's meta description (or og:description), against those of the README's pitch: the H1 and the prose after it up to the first section or code block, at most ${README_PITCH_WORDS} words. Key words are three letters or more, stopwords and the project's names left out. ${Math.round(WEBSITE_PITCH_MIN_OVERLAP * 100)}% of the website's in the README earns every point, less earns a share. Only http and https on public addresses are read, ${MAX_REDIRECTS} redirects at most.`,
 		],
 	];
 	return layout(

@@ -110,13 +110,13 @@ describe("sections", () => {
 		expect(WEIGHTS.library.weights.prerequisites).toBe(1);
 	});
 
-	it("scores 40 for every section and names the line and heading to add for each miss", () => {
+	it("scores 35 for every section and names the line and heading to add for each miss", () => {
 		const full = score({
 			readme: fixture("cli-complete.md"),
 			readmePath: "README.md",
 			type: "cli",
 		}).groups[0];
-		expect([full.points, full.max]).toEqual([40, 40]);
+		expect([full.points, full.max]).toEqual([35, 35]);
 		const lib = score({
 			readme: fixture("library.md"),
 			readmePath: "README.md",
@@ -138,7 +138,7 @@ describe("sections", () => {
 			'Add "## What is slugkit?" at line 15, before "API". Two or three sentences: what slugkit does, who it is for, and what it replaces.',
 		);
 		expect(overview?.snippet?.startsWith("## What is slugkit?\n\n")).toBe(true);
-		expect(lib.points).toBeLessThan(40);
+		expect(lib.points).toBeLessThan(35);
 	});
 });
 
