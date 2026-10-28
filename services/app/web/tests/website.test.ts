@@ -16,7 +16,7 @@ const page = (head: string, body = "") =>
 	`<!doctype html><html><head>${head}</head><body>${body}</body></html>`;
 const ROWCOUNT_SITE = page(
 	'<title>Rowcount | count the rows in any CSV file</title><meta property="og:title" content="Rowcount: count the rows in any CSV file"><meta name="description" content="Rowcount counts the rows in a CSV file of any size, skips the header and reads from a pipe.">',
-	"<h1>Count the rows in any <em>CSV</em> file</h1>",
+	"<h1>Count the rows in any <em>CSV</em> file</h1><pre><code>$ npm install -g rowcount\n$ rowcount sales.csv</code></pre>",
 );
 /** A fetch that answers one page per address, and a resolver that says every host is public. */
 const site = (pages: Record<string, Response | (() => Response)>) => ({
@@ -43,6 +43,7 @@ describe("reading a website", () => {
 				"Rowcount counts the rows in a CSV file of any size, skips the header and reads from a pipe.",
 			ogDescription: null,
 			h1: "Count the rows in any CSV file",
+			code: ["$ npm install -g rowcount\n$ rowcount sales.csv"],
 		});
 		expect(
 			readWebsite(
@@ -151,8 +152,10 @@ describe("website checks", () => {
 		const g = group(readWebsite(ROWCOUNT_SITE, "https://rowcount.dev/"));
 		expect(g?.title).toBe("Website: https://rowcount.dev/");
 		expect(g?.checks.map((c) => [c.id, c.pass, c.points])).toEqual([
-			["website.headline", true, 5],
-			["website.pitch", true, 5],
+			["website.headline", true, 3],
+			["website.pitch", true, 3],
+			["website.lead", true, 2],
+			["website.install", true, 2],
 		]);
 	});
 

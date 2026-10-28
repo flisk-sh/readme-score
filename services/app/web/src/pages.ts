@@ -191,7 +191,7 @@ ${top[0] ? `<p class="fix"><b>Fix first, line ${top[0].line}:</b> ${esc(top[0].f
 }
 
 const STATS: [string, string][] = [
-	["25", "checks, each pointing at a line"],
+	["28", "checks, each pointing at a line"],
 	[String(SECTION_IDS.length), "sections, matched by fixed synonym lists"],
 	[String(PROJECT_TYPES.length), "project types, each with its own weights"],
 	["0", "models: same README, same score"],
@@ -226,13 +226,16 @@ export function homePage(
 		],
 		[
 			"Tagline",
-			POINTS.tagline,
-			"One description in the README, the manifests and the GitHub About box",
+			POINTS.tagline + POINTS.nameSpelling,
+			"One description in the README, the manifests and the GitHub About box, and one spelling of the name",
 		],
 		[
 			"Website",
-			POINTS.websiteHeadline + POINTS.websitePitch,
-			"The product's website: the same headline as the README, and the same words as its pitch",
+			POINTS.websiteHeadline +
+				POINTS.websitePitch +
+				POINTS.websiteLead +
+				POINTS.websiteInstall,
+			"The product's website: the README's headline, its pitch's words, its first command and its install command",
 		],
 	];
 	return layout(
@@ -427,6 +430,18 @@ export function checksPage(base: string): string {
 		[
 			"One tagline everywhere",
 			`The README H1, the descriptions in package.json, pyproject.toml, Cargo.toml and composer.json (and a nested package.json that is published or has a bin), the first > line of llms.txt files and the GitHub About description, compared after dropping case, punctuation, URLs and a leading "<name>:". Points by distinct wordings: ${TAGLINE_POINTS_BY_DISTINCT.join(", ")}.`,
+		],
+		[
+			"One spelling of the name",
+			"The H1's first word is the name. Other capitalisations of it in the README's prose (FLISK, FLisk for Flisk) are listed with their first line; code, link targets, URLs, paths and all-lower-case uses (the command) are left out.",
+		],
+		[
+			"Website leads with the README's command",
+			"The first <name> <subcommand> the README's quickstart runs (flisk project), against the first the website's <pre> and <code> elements show (flisk import); without one, the first command that is not an install, cd or mkdir.",
+		],
+		[
+			"Website shows the README's install command",
+			"The README's first install command against the website's, compared after dropping a $ prompt and repeated spaces.",
 		],
 		[
 			"Website headline matches the README",

@@ -42,8 +42,8 @@ weight and synonym, read from the code that scores.
 | Readability | 10 | Flesch reading ease of the prose: 60 or more for every point, 30 or less for none; the longest sentences and infrastructure words listed | `readme-readability` |
 | Quickstart | 10 | One shell block that installs the project, at most 6 commands, and translated READMEs that give the same commands | `steps-to-first-healthy`, `translation-drift` |
 | Links | 10 | Relative links that name a file in the repository with the right case, and #anchors that match a heading | `doc-links` |
-| Tagline | 5 | One description in the README H1, the package manifests, llms.txt and the GitHub About box | `tagline-consistency` |
-| Website | 10 | The product's website (the repository's homepage, or `homepage` in package.json): its `<title>`, `og:title` or `<h1>` uses the README H1's wording, and its meta description uses at least half the key words of the README's opening | new |
+| Tagline | 5 | One description in the README H1, the package manifests, llms.txt and the GitHub About box; one spelling of the name | `tagline-consistency`, plus name spelling |
+| Website | 10 | The product's website (the repository's homepage, or `homepage` in package.json): its `<title>`, `og:title` or `<h1>` uses the README H1's wording, its meta description at least half the key words of the README's opening, and it leads with the README quickstart's first command and install command | new |
 
 The checks are ported from the scoreboard in [flisk-sh/flisk](https://github.com/flisk-sh/flisk/tree/main/scripts/scores)
 and generalised: any package manager's install command instead of Flisk's, any manifest instead of Flisk's two. The

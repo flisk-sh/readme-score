@@ -23,6 +23,8 @@ export interface Website {
 	description: string | null;
 	ogDescription: string | null;
 	h1: string | null;
+	/** The text of the page's <pre> and <code> elements, in page order: the commands it shows. */
+	code: string[];
 }
 
 const decode = (s: string) =>
@@ -36,6 +38,19 @@ const decode = (s: string) =>
 		.replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
 		.replace(/\s+/g, " ")
 		.trim();
+
+/** How many <pre> and <code> elements of a page are read for its commands. */
+export const MAX_CODE_ELEMENTS = 40;
+
+/** A code element's text, tags removed and entities decoded, line breaks kept. */
+const decodeCode = (s: string) =>
+	s
+		.replace(/<br\s*\/?>/gi, "\n")
+		.replace(/<[^>]+>/g, "")
+		.split("\n")
+		.map((l) => decode(l))
+		.filter(Boolean)
+		.join("\n");
 
 function meta(
 	html: string,
@@ -62,6 +77,10 @@ export function readWebsite(html: string, url: string): Website {
 		description: meta(html, "name", "description"),
 		ogDescription: meta(html, "property", "og:description"),
 		h1: h1 ? decode(h1.replace(/<[^>]+>/g, " ")) || null : null,
+		code: [...html.matchAll(/<(pre|code)\b[^>]*>([\s\S]*?)<\/\1>/gi)]
+			.map((m) => decodeCode(m[2]))
+			.filter(Boolean)
+			.slice(0, MAX_CODE_ELEMENTS),
 	};
 }
 

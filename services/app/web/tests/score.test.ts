@@ -37,15 +37,18 @@ describe("score", () => {
 			POINTS.fileLinks +
 			POINTS.anchors +
 			POINTS.tagline +
+			POINTS.nameSpelling +
 			POINTS.websiteHeadline +
-			POINTS.websitePitch;
+			POINTS.websitePitch +
+			POINTS.websiteLead +
+			POINTS.websiteInstall;
 		expect(total).toBe(100);
 	});
 
 	it("gives the complete CLI fixture 100, grade A, with no fixes", () => {
 		const r = score(complete);
 		expect([r.score, r.grade, r.type.type]).toEqual([100, "A", "cli"]);
-		expect(r.counts).toEqual({ passed: 22, failed: 0, skipped: 3 });
+		expect(r.counts).toEqual({ passed: 23, failed: 0, skipped: 5 });
 		expect(r.groups.flatMap((g) => g.checks).filter((c) => c.fix)).toEqual([]);
 		// Translations and the two website checks have nothing to look at; their 15 points leave the total.
 		expect(r.available).toBe(85);
@@ -95,8 +98,16 @@ describe("score", () => {
 				"website.pitch",
 				'no website: set the repository\'s homepage on GitHub (the gear next to About) or "homepage" in package.json',
 			],
+			[
+				"website.lead",
+				'no website: set the repository\'s homepage on GitHub (the gear next to About) or "homepage" in package.json',
+			],
+			[
+				"website.install",
+				'no website: set the repository\'s homepage on GitHub (the gear next to About) or "homepage" in package.json',
+			],
 		]);
-		expect(r.available).toBe(75);
+		expect(r.available).toBe(77);
 		expect(r.score).toBe(100);
 	});
 

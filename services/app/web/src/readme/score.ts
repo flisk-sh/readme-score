@@ -3,6 +3,13 @@
 // with no translations has none to compare) is skipped, and its points leave the total, so the score is
 // 100 × points earned / points available.
 import {
+	brandName,
+	commandsIn,
+	installCommand,
+	leadCommand,
+	nameSpellings,
+} from "./branding";
+import {
 	firstScreen,
 	H1_WITHIN_NONEMPTY_LINES,
 	IMAGE_WITHIN_LINES,
@@ -15,11 +22,12 @@ import {
 	brokenFileLinks,
 	POINTS_LOST_PER_BROKEN_LINK,
 } from "./links";
-import { firstH1, round1 } from "./markdown";
+import { codeBlocks, firstH1, round1 } from "./markdown";
 import {
 	drift,
 	MAX_QUICKSTART_COMMANDS,
 	quickstart,
+	SHELLS,
 	shellCommands,
 } from "./quickstart";
 import {
@@ -63,14 +71,20 @@ export const POINTS = {
 	translations: 5,
 	fileLinks: 5,
 	anchors: 5,
-	tagline: 5,
+	tagline: 3,
+	/** The H1's spelling of the name used everywhere in the README's prose. */
+	nameSpelling: 2,
 	/** The website's headline uses the README H1's wording. */
-	websiteHeadline: 5,
+	websiteHeadline: 3,
 	/** The website's description uses the README pitch's words; partial points below WEBSITE_PITCH_MIN_OVERLAP. */
-	websitePitch: 5,
+	websitePitch: 3,
+	/** The website leads with the command the README's quickstart leads with. */
+	websiteLead: 2,
+	/** The website shows the README's install command. */
+	websiteInstall: 2,
 } as const;
 /** Tagline points by how many different wordings there are: one, two, three or more. */
-export const TAGLINE_POINTS_BY_DISTINCT = [5, 2.5, 0] as const;
+export const TAGLINE_POINTS_BY_DISTINCT = [3, 1.5, 0] as const;
 /** The lowest score for each grade. */
 export const GRADES: [number, string][] = [
 	[90, "A"],
@@ -593,7 +607,51 @@ function taglineGroup(input: ReadmeInput, names: string[]): Group {
 				: "",
 			findings,
 		}),
+		nameSpellingCheck(input),
 	]);
+}
+
+function nameSpellingCheck(input: ReadmeInput): Check {
+	const h1 = firstH1(input.readme);
+	const name = brandName(h1);
+	const h1Line = h1
+		? input.readme.split("\n").findIndex((l) => l.includes(h1)) + 1
+		: 0;
+	if (!name)
+		return check({
+			id: "tagline.name",
+			title: "One spelling of the name",
+			pass: null,
+			max: POINTS.nameSpelling,
+			measured: "the README has no H1 to take the name from",
+			limit: "the H1's spelling",
+		});
+	const other = nameSpellings(input.readme, name);
+	const total = other.reduce((n, s) => n + s.count, 0);
+	return check({
+		id: "tagline.name",
+		title: "One spelling of the name",
+		pass: other.length === 0,
+		max: POINTS.nameSpelling,
+		measured: other.length
+			? `${plural(total, "use")} spelled otherwise than "${name}"`
+			: `"${name}" throughout`,
+		limit: `"${name}", as the H1 spells it; lower case for the command is fine`,
+		...(other.length
+			? { line: other[0].line }
+			: h1Line
+				? { line: h1Line }
+				: {}),
+		fix: `Spell it "${name}" everywhere, as the H1 does: ${other.map((s) => `"${s.spelling}"`).join(", ")} ${other.length === 1 ? "is" : "are"} listed with the first line ${other.length === 1 ? "it is" : "each is"} on.`,
+		...(other.length
+			? {
+					findings: other.map((s) => ({
+						line: s.line,
+						text: `"${s.spelling}" ${s.count}×`,
+					})),
+				}
+			: {}),
+	});
 }
 
 /** Where a website comes from, for the fix when there is none. */
@@ -606,6 +664,8 @@ function websiteGroup(input: ReadmeInput, names: string[]): Group {
 	const limits = {
 		headline: "the README H1's wording",
 		pitch: `${Math.round(WEBSITE_PITCH_MIN_OVERLAP * 100)}% of the website's key words`,
+		lead: "the first <name> command the README's quickstart runs",
+		install: "the README's first install command",
 	};
 	if (!site || "error" in site) {
 		const why = site ? `not checked: ${site.url} ${site.error}` : NO_WEBSITE;
@@ -625,6 +685,22 @@ function websiteGroup(input: ReadmeInput, names: string[]): Group {
 				max: POINTS.websitePitch,
 				measured: why,
 				limit: limits.pitch,
+			}),
+			check({
+				id: "website.lead",
+				title: "Website leads with the README's command",
+				pass: null,
+				max: POINTS.websiteLead,
+				measured: why,
+				limit: limits.lead,
+			}),
+			check({
+				id: "website.install",
+				title: "Website shows the README's install command",
+				pass: null,
+				max: POINTS.websiteInstall,
+				measured: why,
+				limit: limits.install,
 			}),
 		]);
 	}
@@ -695,7 +771,60 @@ function websiteGroup(input: ReadmeInput, names: string[]): Group {
 				}
 			: {}),
 	});
-	return finish("website", `Website: ${site.url}`, [headline, pitchCheck]);
+	// The README's commands: its quickstart's, else every shell block's.
+	const block = quickstart(input.readme, names);
+	const readmeCommands = block
+		? shellCommands(block.body)
+		: codeBlocks(input.readme)
+				.filter((b) => SHELLS.includes(b.lang))
+				.flatMap((b) => shellCommands(b.body));
+	const siteCommands = commandsIn(site.code);
+	const name = brandName(h1) ?? names[0] ?? "";
+	const readmeLead = leadCommand(readmeCommands, name, names);
+	const siteLead = leadCommand(siteCommands, name, names);
+	const lead = check({
+		id: "website.lead",
+		title: "Website leads with the README's command",
+		pass:
+			readmeLead && siteLead
+				? readmeLead.toLowerCase() === siteLead.toLowerCase()
+				: null,
+		max: POINTS.websiteLead,
+		measured: !readmeLead
+			? "the README shows no command"
+			: !siteLead
+				? `${site.url} shows no command`
+				: readmeLead.toLowerCase() === siteLead.toLowerCase()
+					? `both lead with ${readmeLead}`
+					: `the README leads with ${readmeLead}, the website with ${siteLead}`,
+		limit: limits.lead,
+		...(block ? { line: block.line } : {}),
+		fix: `Lead with one command in both places: the README's quickstart starts with ${readmeLead ?? ""}, the website's first command is ${siteLead ?? ""}. Put the same first step first on both, or say on each why there are two ways in.`,
+	});
+	const readmeInstall = installCommand(readmeCommands, names);
+	const siteInstall = installCommand(siteCommands, names);
+	const install = check({
+		id: "website.install",
+		title: "Website shows the README's install command",
+		pass: readmeInstall && siteInstall ? readmeInstall === siteInstall : null,
+		max: POINTS.websiteInstall,
+		measured: !readmeInstall
+			? "the README shows no install command"
+			: !siteInstall
+				? `${site.url} shows no install command`
+				: readmeInstall === siteInstall
+					? `both: ${readmeInstall}`
+					: `the README: ${readmeInstall}; the website: ${siteInstall}`,
+		limit: limits.install,
+		...(block ? { line: block.line } : {}),
+		fix: `Show one install command: the README has "${readmeInstall ?? ""}", the website "${siteInstall ?? ""}".`,
+	});
+	return finish("website", `Website: ${site.url}`, [
+		headline,
+		pitchCheck,
+		lead,
+		install,
+	]);
 }
 
 function finish(id: string, title: string, checks: Check[]): Group {
