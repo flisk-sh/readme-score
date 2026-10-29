@@ -84,10 +84,10 @@ describe("pages", () => {
 		);
 	});
 
-	it("offers one button that opens Claude with every fix typed in", async () => {
+	it("offers one button that opens Claude Code with every fix typed in", async () => {
 		const html = await (await app.request("/acme/bare")).text();
 		const href = html.match(/class="btn" href="([^"]+)"/)?.[1] ?? "";
-		expect(href.startsWith("https://claude.ai/new?q=")).toBe(true);
+		expect(href.startsWith("claude://code/new?q=")).toBe(true);
 		const prompt = decodeURIComponent(href.split("?q=")[1] ?? "");
 		expect(prompt).toContain("Fix my README");
 		expect(prompt).toContain("Add a title as the first line");

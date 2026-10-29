@@ -266,10 +266,13 @@ ${PRODUCT_HUNT_BADGE}</div>`,
 	);
 }
 
-/** One link that opens Claude with every failing check and its fix typed in, so one click starts the repair. */
+/** One link that opens Claude Code desktop app's claude://code/new deep link) with every failing check and its fix typed in. */
 export function fixAllInClaude(report: Report, url?: string): string {
-	const task = `Fix my README so every check below passes. Edit README.md (and any other file a fix names), change nothing else, then tell me what you changed.\n\n${summarize(report, url)}`;
-	return `https://claude.ai/new?q=${encodeURIComponent(task.slice(0, 6000))}`;
+	const task = `Fix my README so every check below passes${report.repo ? ` (the ${report.repo.owner}/${report.repo.name} repo)` : ""}. Edit README.md (and any other file a fix names), change nothing else, then tell me what you changed.\n\n${summarize(report, url)}`;
+	const repo = report.repo
+		? `&repo=${report.repo.owner}/${report.repo.name}`
+		: "";
+	return `claude://code/new?q=${encodeURIComponent(task.slice(0, 6000))}`;
 }
 
 /** The Product Hunt "featured" badge for the launch, linked with Product Hunt's own tracking parameters. */
@@ -335,7 +338,7 @@ claude mcp add --transport http ${SITE.id} ${esc(base)}/mcp</pre>
 		`<section class="hero stage"><div class="wrap"><h1 class="score grad">${r.score}<small>/100</small></h1>
 <span class="grade g-${r.grade}">Grade ${r.grade}</span>
 <p class="lede">${repoLink}<br>${r.counts.passed} checks pass, ${r.counts.failed} fail${r.counts.skipped ? `, ${r.counts.skipped} not checked` : ""} · ${num(r.earned)} of ${num(r.available)} points</p>
-${fails.length ? `<p><a class="btn" href="${esc(fixAllInClaude(r, opts.path ? `${base}/${opts.path}` : undefined))}" target="_blank" rel="noopener">Fix all in Claude</a></p>` : ""}
+${fails.length ? `<p><a class="btn" href="${esc(fixAllInClaude(r, opts.path ? `${base}/${opts.path}` : undefined))}" target="_blank" rel="noopener">Fix all in Claude Code</a></p>` : ""}
 ${types}<p class="types">${esc(r.type.chosen ? "Type chosen on this page." : `Detected: ${r.type.reason}.`)}</p></div></section>
 <div class="wrap">${
 			fails.length
