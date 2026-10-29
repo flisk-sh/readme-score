@@ -69,6 +69,16 @@ describe("pages", () => {
 		);
 	});
 
+	it("offers one button that opens Claude with every fix typed in", async () => {
+		const html = await (await app.request("/acme/bare")).text();
+		const href = html.match(/class="btn" href="([^"]+)"/)?.[1] ?? "";
+		expect(href.startsWith("https://claude.ai/new?q=")).toBe(true);
+		const prompt = decodeURIComponent(href.split("?q=")[1] ?? "");
+		expect(prompt).toContain("Fix my README");
+		expect(prompt).toContain("Add a title as the first line");
+		expect(prompt).toContain("https://tool.test/acme/bare");
+	});
+
 	it("lists the fixes for a weak README, and rescores it as another type", async () => {
 		const html = await (await app.request("/acme/bare")).text();
 		expect(html).toContain("<h2>Fix first</h2>");
