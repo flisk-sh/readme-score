@@ -77,6 +77,7 @@ a.btn{display:inline-block;box-sizing:border-box;font-weight:700;font-size:18px;
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row label{color:var(--muted);font-size:14px}
 .chips{margin:18px 0 0;font-size:13px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .chip{text-decoration:none;color:var(--fg);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 12px;background:rgba(255,255,255,.05);font-family:var(--mono)}.chip:hover{border-color:var(--accent)}
+.ph{margin:40px 0 0}.ph img{display:block}
 .reassure{margin:14px 0 0;font-size:13px;color:var(--muted)}.reassure b{color:var(--pass)}
 .error{max-width:620px;margin:0 auto 18px;padding:10px 14px;border-radius:10px;background:color-mix(in srgb,var(--fail) 16%,transparent);color:var(--fg)}
 .score{font-size:clamp(76px,16vw,132px);line-height:1;margin:0 auto 6px;font-weight:850;letter-spacing:-.05em}.score small{font-size:.32em;letter-spacing:0;-webkit-text-fill-color:var(--muted)}
@@ -260,7 +261,8 @@ ${preview()}
 			.join("")}</tbody></table></div>
 <p>A check with nothing to look at (a pasted README has no file tree) is left out, and the score is the points earned over the points that count. Every threshold is on <a href="${root}/checks">the checks page</a>.</p>
 <h2>Or type it</h2>
-<pre>${esc(base)}/flisk-sh/flisk</pre></div>`,
+<pre>${esc(base)}/flisk-sh/flisk</pre>
+${PRODUCT_HUNT_BADGE}</div>`,
 	);
 }
 
@@ -269,6 +271,9 @@ export function fixAllInClaude(report: Report, url?: string): string {
 	const task = `Fix my README so every check below passes. Edit README.md (and any other file a fix names), change nothing else, then tell me what you changed.\n\n${summarize(report, url)}`;
 	return `https://claude.ai/new?q=${encodeURIComponent(task.slice(0, 6000))}`;
 }
+
+/** The Product Hunt "featured" badge for the launch, linked with Product Hunt's own tracking parameters. */
+const PRODUCT_HUNT_BADGE = `<p class="ph"><a href="https://www.producthunt.com/products/readme-score?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-readme-score" target="_blank" rel="noopener noreferrer"><img alt="README Score - Score your README out of 100, with a fix for every miss | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1296522&amp;theme=light&amp;t=1793234373643"></a></p>`;
 
 export interface ResultOptions {
 	/** The result's own path ("owner/repo" or "owner/repo/tree/ref"); none for a pasted README. */

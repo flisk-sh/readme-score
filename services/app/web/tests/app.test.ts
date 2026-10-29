@@ -34,6 +34,21 @@ describe("pages", () => {
 		expect(await res.text()).not.toContain("<script>");
 	});
 
+	it("shows the Product Hunt badge on the home page only, and lets the policy load its image", async () => {
+		const res = await app.request("/");
+		const html = await res.text();
+		expect(html).toContain(
+			"https://api.producthunt.com/widgets/embed-image/v1/featured.svg",
+		);
+		expect(html).toContain('rel="noopener noreferrer"');
+		expect(res.headers.get("content-security-policy")).toContain(
+			"img-src 'self' https://api.producthunt.com",
+		);
+		expect(await (await app.request("/about")).text()).not.toContain(
+			"producthunt.com",
+		);
+	});
+
 	it("shows a sample result on the home page, worked out by the checks", async () => {
 		const html = await (await app.request("/")).text();
 		expect(html).toContain("Sample result");
