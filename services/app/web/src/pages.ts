@@ -39,7 +39,7 @@ import {
 	WEIGHT_LABELS,
 	WEIGHTS,
 } from "./readme/sections";
-import { fixFirst, headline } from "./readme/summary";
+import { fixFirst, headline, summarize } from "./readme/summary";
 import {
 	README_PITCH_WORDS,
 	WEBSITE_PITCH_MIN_OVERLAP,
@@ -73,6 +73,7 @@ form.repo:focus-within{border-color:#9db0ff}
 button{font:inherit;font-weight:650;padding:12px 22px;border:0;border-radius:10px;background:linear-gradient(135deg,#5b7cff,#8b5cf6);color:#fff;cursor:pointer;box-shadow:0 8px 24px -10px rgba(91,124,255,.8)}button:hover{background:linear-gradient(135deg,#6d8bff,#a06bff)}
 details.paste{max-width:620px;margin:16px auto 0;text-align:left}details.paste summary{cursor:pointer;color:var(--muted);text-align:center}
 details.paste form{display:grid;gap:10px;margin-top:12px}textarea{width:100%;min-height:220px;font:13px/1.5 var(--mono)}
+a.btn{display:inline-block;box-sizing:border-box;font-weight:700;font-size:18px;padding:14px 30px;border-radius:12px;background:#d97757;color:#fff;text-decoration:none;box-shadow:0 10px 28px -10px rgba(217,119,87,.9);margin:4px 0 14px}a.btn:hover{background:#e58a6b}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row label{color:var(--muted);font-size:14px}
 .chips{margin:18px 0 0;font-size:13px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .chip{text-decoration:none;color:var(--fg);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 12px;background:rgba(255,255,255,.05);font-family:var(--mono)}.chip:hover{border-color:var(--accent)}
@@ -106,7 +107,7 @@ footer{margin-top:96px;border-top:1px solid var(--line);padding:26px 0 44px;colo
 .stats div{padding:24px 20px 28px 0}.stats div+div{padding-left:20px;border-left:1px solid var(--line)}
 .stats b{display:block;font-size:clamp(30px,4vw,48px);line-height:1;font-weight:800;letter-spacing:-.04em}.stats span{display:block;margin-top:8px;color:var(--muted);font-size:14px;line-height:1.4;max-width:22ch}
 .kick{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin:72px 0 10px}.kick+h2{margin-top:0}
-@media (max-width:640px){.stats{grid-template-columns:1fr 1fr}.stats div{padding:18px 12px 20px 0}.stats div+div{padding-left:12px}.stats div:nth-child(3){padding-left:0;border-left:0}.stats div:nth-child(n+3){border-top:1px solid var(--line)}form.repo{flex-direction:column}button{width:100%}}
+@media (max-width:640px){.stats{grid-template-columns:1fr 1fr}.stats div{padding:18px 12px 20px 0}.stats div+div{padding-left:12px}.stats div:nth-child(3){padding-left:0;border-left:0}.stats div:nth-child(n+3){border-top:1px solid var(--line)}form.repo{flex-direction:column}button,a.btn{width:100%}}
 `;
 
 const rootOf = (base: string) =>
@@ -265,6 +266,12 @@ ${PRODUCT_HUNT_BADGE}</div>`,
 	);
 }
 
+/** One link that opens Claude with every failing check and its fix typed in, so one click starts the repair. */
+export function fixAllInClaude(report: Report, url?: string): string {
+	const task = `Fix my README so every check below passes. Edit README.md (and any other file a fix names), change nothing else, then tell me what you changed.\n\n${summarize(report, url)}`;
+	return `https://claude.ai/new?q=${encodeURIComponent(task.slice(0, 6000))}`;
+}
+
 /** The Product Hunt "featured" badge for the launch, linked with Product Hunt's own tracking parameters. */
 const PRODUCT_HUNT_BADGE = `<p class="ph"><a href="https://www.producthunt.com/products/readme-score?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-readme-score" target="_blank" rel="noopener noreferrer"><img alt="README Score - Score your README out of 100, with a fix for every miss | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1296522&amp;theme=light&amp;t=1793234373643"></a></p>`;
 
@@ -328,6 +335,7 @@ claude mcp add --transport http ${SITE.id} ${esc(base)}/mcp</pre>
 		`<section class="hero stage"><div class="wrap"><h1 class="score grad">${r.score}<small>/100</small></h1>
 <span class="grade g-${r.grade}">Grade ${r.grade}</span>
 <p class="lede">${repoLink}<br>${r.counts.passed} checks pass, ${r.counts.failed} fail${r.counts.skipped ? `, ${r.counts.skipped} not checked` : ""} · ${num(r.earned)} of ${num(r.available)} points</p>
+${fails.length ? `<p><a class="btn" href="${esc(fixAllInClaude(r, opts.path ? `${base}/${opts.path}` : undefined))}" target="_blank" rel="noopener">Fix all in Claude</a></p>` : ""}
 ${types}<p class="types">${esc(r.type.chosen ? "Type chosen on this page." : `Detected: ${r.type.reason}.`)}</p></div></section>
 <div class="wrap">${
 			fails.length
