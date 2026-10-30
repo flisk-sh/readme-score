@@ -49,6 +49,30 @@ The checks are ported from the scoreboard in [flisk-sh/flisk](https://github.com
 and generalised: any package manager's install command instead of Flisk's, any manifest instead of Flisk's two. The
 thresholds are named constants in [`services/app/web/src/readme/`](services/app/web/src/readme).
 
+## In your terminal and CI
+
+```bash
+npx @flisk-sh/readme-score                  # this folder
+npx @flisk-sh/readme-score honojs/hono      # a public GitHub repository
+npx @flisk-sh/readme-score --min-score 90 --markdown >> "$GITHUB_STEP_SUMMARY"
+```
+
+The same checks as the website, deterministic. Options: `--min-score <n>`, `--type cli|library|app|api`, `--no-website`,
+`--json`, `--markdown`. Exit codes: 0 passed, 1 below `--min-score`, 2 a README could not be read. Source:
+[`packages/readme-score`](packages/readme-score).
+
+As a GitHub Action, the score appears on the job summary and the job fails below `min-score`:
+
+```yaml
+- uses: actions/checkout@v4
+- uses: flisk-sh/readme-score@v1
+  with:
+    min-score: 90
+```
+
+Inputs: `path`, `min-score`, `type`, `website` (`false` leaves out the checks that read the product's website),
+`version` (the npm package, pinned). Outputs: `score`, `grade`, `passed`, `report`.
+
 ## Prerequisites
 
 - [Bun](https://bun.sh/) 1.2 or newer (`bun --version`). Nothing else: no database and no API key.
