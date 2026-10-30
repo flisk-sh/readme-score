@@ -1,0 +1,98 @@
+name: "README Score"
+description: "Score your README out of 100 with fixed rules and a fix for every miss. Shows the score on the job summary and fails the build below a minimum."
+author: "flisk-sh"
+branding:
+  icon: "file-text"
+  color: "green"
+
+inputs:
+  path:
+    description: "Folder to score, relative to the workspace. Run actions/checkout first."
+    required: false
+    default: "."
+  min-score:
+    description: "Fail the job when the README scores below this (0-100). Empty means report only."
+    required: false
+    default: ""
+  type:
+    description: "Score as one of: cli, library, app, api. Empty detects it."
+    required: false
+    default: ""
+  website:
+    description: "Read the product's website (the homepage in package.json) and compare it with the README. Set to false to leave those checks out, e.g. before a site exists."
+    required: false
+    default: "true"
+  version:
+    description: "Version of the @flisk-sh/readme-score npm package to run. Pin it: a new release may reweigh a check."
+    required: false
+    default: "0.1.0"
+  node-version:
+    description: "Node.js version used to run the CLI (20 or later)."
+    required: false
+    default: "22"
+
+outputs:
+  score:
+    description: "The README's score (0-100)."
+    value: ${{ steps.run.outputs.score }}
+  grade:
+    description: "The grade, A to F."
+    value: ${{ steps.run.outputs.grade }}
+  passed:
+    description: "true when the score met min-score (always true without one)."
+    value: ${{ steps.run.outputs.passed }}
+  report:
+    description: "Path to the JSON report on the runner."
+    value: ${{ steps.run.outputs.report }}
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - id: run
+      shell: bash
+      env:
+        RS_PATH: ${{ inputs.path }}
+        RS_MIN_SCORE: ${{ inputs.min-score }}
+        RS_TYPE: ${{ inputs.type }}
+        RS_WEBSITE: ${{ inputs.website }}
+        RS_VERSION: ${{ inputs.version }}
+      run: |
+        set -u +e
+        target="${GITHUB_WORKSPACE}/${RS_PATH}"
+        # Not in the workspace: inside a checkout that holds this package, npx would look for a local link.
+        cd "$RUNNER_TEMP"
+        common=("$target")
+        [ -n "$RS_TYPE" ] && common+=(--type "$RS_TYPE")
+        [ "$RS_WEBSITE" = "false" ] && common+=(--no-website)
+        cli=(npx -y "@flisk-sh/readme-score@${RS_VERSION}")
+
+        # The score shows on the job summary whether or not the gate passes.
+        "${cli[@]}" "${common[@]}" --markdown >> "$GITHUB_STEP_SUMMARY"
+
+        report="${RUNNER_TEMP}/readme-score-report.json"
+        gate=()
+        [ -n "$RS_MIN_SCORE" ] && gate=(--min-score "$RS_MIN_SCORE")
+        "${cli[@]}" "${common[@]}" ${gate[@]+"${gate[@]}"} --json > "$report"
+        code=$?
+
+        REPORT="$report" CODE="$code" node -e '
+          const fs = require("fs");
+          let r = {};
+          try { r = JSON.parse(fs.readFileSync(process.env.REPORT, "utf8")); } catch {}
+          const out = [
+            `score=${r.score ?? ""}`,
+            `grade=${r.grade ?? ""}`,
+            `passed=${process.env.CODE === "0"}`,
+            `report=${process.env.REPORT}`,
+          ];
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, out.join("\n") + "\n");
+          if (r.score === undefined) console.log("::error::The README could not be scored.");
+          else console.log(`README: ${r.score}/100 (grade ${r.grade})`);
+          if (process.env.CODE === "1")
+            console.log(`::error::Below the minimum score of ${process.env.RS_MIN_SCORE}: the README scored ${r.score}.`);
+        '
+        exit "$code"

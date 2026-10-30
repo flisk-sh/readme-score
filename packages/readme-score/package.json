@@ -1,0 +1,31 @@
+{
+  "name": "@flisk-sh/readme-score",
+  "version": "0.1.0",
+  "description": "Score a README out of 100 with fixed rules and a fix for every miss. Deterministic, no model, for your terminal and CI.",
+  "keywords": ["readme", "documentation", "lint", "score", "ci", "github-actions"],
+  "homepage": "https://readme.flisk.si",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flisk-sh/readme-score.git",
+    "directory": "packages/readme-score"
+  },
+  "bugs": "https://github.com/flisk-sh/readme-score/issues",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "readme-score": "dist/readme-score.mjs" },
+  "files": ["dist"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "bun build src/bin.ts --target=node --format=esm --outfile dist/readme-score.mjs",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "biome check .",
+    "prepack": "bun run build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.13",
+    "@types/bun": "^1.4.2",
+    "@types/node": "^20.0.0",
+    "typescript": "^7.0.2"
+  }
+}

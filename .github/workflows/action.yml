@@ -1,0 +1,29 @@
+name: Action
+
+on:
+  pull_request:
+    paths:
+      - action.yml
+      - .github/workflows/action.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  action:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - id: score
+        uses: ./
+        with:
+          min-score: "50"
+          website: "false"
+      - name: The score is an output
+        env:
+          SCORE: ${{ steps.score.outputs.score }}
+        run: test -n "$SCORE" && echo "score $SCORE"

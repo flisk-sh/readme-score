@@ -19,8 +19,8 @@ export const MAX_NESTED_MANIFESTS = 6;
 export const MAX_LLMS_FILES = 4;
 /** Where GitHub looks for the README, in its order. */
 export const README_FOLDERS = [".github", "", "docs"];
-const README_NAME = /^readme(?:\.(md|markdown|mdown|mkdn|mkd|txt))?$/i;
-const ROOT_MANIFESTS = [
+export const README_NAME = /^readme(?:\.(md|markdown|mdown|mkdn|mkd|txt))?$/i;
+export const ROOT_MANIFESTS = [
 	"package.json",
 	"pyproject.toml",
 	"Cargo.toml",
