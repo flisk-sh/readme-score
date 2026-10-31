@@ -10,7 +10,8 @@ const PROMPTS = [
 	{
 		name: "improve_my_readme",
 		title: "Improve my README",
-		description: "Score a README out of 100 and list the fixes, most important first.",
+		description:
+			"Score a README out of 100 and list the fixes, most important first.",
 		arguments: [
 			{
 				name: "repo",
@@ -163,7 +164,10 @@ async function handleOne(
 				protocolVersion: PROTOCOL_VERSIONS.includes(asked)
 					? asked
 					: PROTOCOL_VERSIONS[0],
-				capabilities: { tools: { listChanged: false }, prompts: { listChanged: false } },
+				capabilities: {
+					tools: { listChanged: false },
+					prompts: { listChanged: false },
+				},
 				serverInfo: {
 					name: SITE.id,
 					title: SITE.name,
