@@ -1,9 +1,9 @@
 ---
-name: score-readme
-description: Score a README out of 100 and list what to fix. Use when the user asks if their README is good, wants to improve it, or is about to publish a project.
+name: improve-readme
+description: Improve a README: score it out of 100 and list what to fix. Use when the user says improve my README, fix my README, make my README better, review my README, is my README good, or README score, or is about to publish a project.
 ---
 
-# Score a README
+# Improve a README
 
 Use the `score_readme` tool from the `readme-checker` server.
 
