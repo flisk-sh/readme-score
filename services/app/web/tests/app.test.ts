@@ -300,3 +300,39 @@ describe("guards", () => {
 		expect(cache.get("c")).toBeUndefined();
 	});
 });
+
+describe("prompts", () => {
+	it("lists improve_my_readme and fills it with the repo", async () => {
+		const list = await (
+			await rpc(app, { jsonrpc: "2.0", id: 1, method: "prompts/list" })
+		).json();
+		expect(list.result.prompts.map((p: { name: string }) => p.name)).toEqual([
+			"improve_my_readme",
+		]);
+		const got = await (
+			await rpc(app, {
+				jsonrpc: "2.0",
+				id: 2,
+				method: "prompts/get",
+				params: {
+					name: "improve_my_readme",
+					arguments: { repo: "flisk-sh/flisk" },
+				},
+			})
+		).json();
+		expect(got.result.messages[0].content.text).toContain("flisk-sh/flisk");
+		expect(got.result.messages[0].content.text).toContain("score_readme");
+	});
+
+	it("refuses a prompt without its repo", async () => {
+		const got = await (
+			await rpc(app, {
+				jsonrpc: "2.0",
+				id: 3,
+				method: "prompts/get",
+				params: { name: "improve_my_readme", arguments: {} },
+			})
+		).json();
+		expect(got.error.code).toBe(-32602);
+	});
+});
