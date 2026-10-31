@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "readme-checker": {
+      "type": "http",
+      "url": "https://readme.flisk.si/mcp"
+    }
+  }
+}

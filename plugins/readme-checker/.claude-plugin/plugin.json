@@ -1,0 +1,24 @@
+{
+  "name": "readme-checker",
+  "displayName": "README Checker",
+  "version": "1.0.0",
+  "description": "Is your README any good? Get a score out of 100 and a fix for each problem, with the line to change. Free, no account.",
+  "author": {
+    "name": "Flisk",
+    "url": "https://flisk.sh"
+  },
+  "homepage": "https://readme.flisk.si",
+  "repository": "https://github.com/flisk-sh/readme-score",
+  "license": "MIT",
+  "keywords": [
+    "readme",
+    "documentation",
+    "docs",
+    "github",
+    "mcp"
+  ],
+  "icon": "./.claude-plugin/icon.png",
+  "documentationUrl": "https://github.com/flisk-sh/readme-score#readme",
+  "supportUrl": "https://github.com/flisk-sh/readme-score/issues",
+  "privacyPolicyUrl": "https://readme.flisk.si/about"
+}
