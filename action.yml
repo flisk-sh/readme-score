@@ -1,5 +1,5 @@
 name: "README Score"
-description: "Score your README out of 100 with fixed rules and a fix for every miss. Shows the score on the job summary and fails the build below a minimum."
+description: "Score your README out of 100 with fixed rules and a fix for every miss. Fails the build below a minimum score."
 author: "flisk-sh"
 branding:
   icon: "file-text"
