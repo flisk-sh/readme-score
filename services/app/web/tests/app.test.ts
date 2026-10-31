@@ -225,7 +225,7 @@ describe("API, badge and MCP", () => {
 			result: { tools: { name: string; annotations: { title: string } }[] };
 		};
 		expect(list.result.tools.map((t) => t.name)).toEqual(["score_readme"]);
-		expect(list.result.tools[0].annotations.title).toBe("Score a README");
+		expect(list.result.tools[0].annotations.title).toBe("Improve a README");
 		const call = async (args: object) =>
 			(
 				(await (
