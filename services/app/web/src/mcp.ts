@@ -6,6 +6,39 @@ import { SITE } from "./site";
 
 const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 
+const PROMPTS = [
+	{
+		name: "improve_my_readme",
+		title: "Improve my README",
+		description: "Score a README out of 100 and list the fixes, most important first.",
+		arguments: [
+			{
+				name: "repo",
+				description: "GitHub repo as owner/name, for example flisk-sh/flisk",
+				required: true,
+			},
+		],
+	},
+] as const;
+
+function getPrompt(name: string, args: Record<string, unknown> | undefined) {
+	if (name !== "improve_my_readme") return null;
+	const repo = typeof args?.repo === "string" ? args.repo.trim() : "";
+	if (!repo) return null;
+	return {
+		description: "Score and improve a README.",
+		messages: [
+			{
+				role: "user",
+				content: {
+					type: "text",
+					text: `Score the README of ${repo} with score_readme. Show the score out of 100, then the fixes, most important first.`,
+				},
+			},
+		],
+	};
+}
+
 export interface Tool {
 	definition: {
 		name: string;
@@ -130,7 +163,7 @@ async function handleOne(
 				protocolVersion: PROTOCOL_VERSIONS.includes(asked)
 					? asked
 					: PROTOCOL_VERSIONS[0],
-				capabilities: { tools: { listChanged: false } },
+				capabilities: { tools: { listChanged: false }, prompts: { listChanged: false } },
 				serverInfo: {
 					name: SITE.id,
 					title: SITE.name,
@@ -143,6 +176,24 @@ async function handleOne(
 			return ok({});
 		case "tools/list":
 			return ok({ tools: TOOLS.map((t) => t.definition) });
+		case "prompts/list":
+			return ok({ prompts: PROMPTS });
+		case "prompts/get": {
+			const prompt = getPrompt(
+				String(params?.name ?? ""),
+				params?.arguments as Record<string, unknown> | undefined,
+			);
+			if (!prompt)
+				return {
+					jsonrpc: "2.0",
+					id,
+					error: {
+						code: -32602,
+						message: `Unknown prompt or missing argument: ${String(params?.name)}`,
+					},
+				};
+			return ok(prompt);
+		}
 		case "tools/call": {
 			const tool = TOOLS.find((t) => t.definition.name === params.name);
 			if (!tool)
