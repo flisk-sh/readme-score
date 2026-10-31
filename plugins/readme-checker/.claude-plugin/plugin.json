@@ -1,8 +1,8 @@
 {
   "name": "readme-checker",
-  "displayName": "README Checker",
+  "displayName": "Improve My README",
   "version": "1.0.0",
-  "description": "Is your README any good? Get a score out of 100 and a fix for each problem, with the line to change. Free, no account.",
+  "description": "Improve your README. Get a score out of 100 and a fix for each problem, with the line to change. Free, no account.",
   "author": {
     "name": "Flisk",
     "url": "https://flisk.sh"
@@ -12,8 +12,11 @@
   "license": "MIT",
   "keywords": [
     "readme",
+    "improve readme",
+    "fix readme",
+    "readme score",
+    "readme checker",
     "documentation",
-    "docs",
     "github",
     "mcp"
   ],
