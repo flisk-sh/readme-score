@@ -73,7 +73,7 @@ form.repo:focus-within{border-color:#9db0ff}
 button{font:inherit;font-weight:650;padding:12px 22px;border:0;border-radius:10px;background:linear-gradient(135deg,#5b7cff,#8b5cf6);color:#fff;cursor:pointer;box-shadow:0 8px 24px -10px rgba(91,124,255,.8)}button:hover{background:linear-gradient(135deg,#6d8bff,#a06bff)}
 details.paste{max-width:620px;margin:16px auto 0;text-align:left}details.paste summary{cursor:pointer;color:var(--muted);text-align:center}
 details.paste form{display:grid;gap:10px;margin-top:12px}textarea{width:100%;min-height:220px;font:13px/1.5 var(--mono)}
-a.btn{display:inline-block;box-sizing:border-box;font-weight:700;font-size:18px;padding:14px 30px;border-radius:12px;background:#d97757;color:#fff;text-decoration:none;box-shadow:0 10px 28px -10px rgba(217,119,87,.9);margin:4px 0 14px}a.btn:hover{background:#e58a6b}
+a.btn{display:inline-block;box-sizing:border-box;font-weight:700;font-size:18px;padding:14px 30px;border-radius:12px;background:#d97757;color:#fff;text-decoration:none;box-shadow:0 10px 28px -10px rgba(217,119,87,.9);margin:4px 0 14px}a.btn:hover{background:#e58a6b}.share{margin:36px 0 8px;padding:24px;border:1px solid var(--line);border-radius:20px;background:var(--card);box-shadow:0 1px 2px rgba(20,20,19,.04),0 8px 24px -12px rgba(20,20,19,.12)}.share h2{margin:0 0 4px;border:0;padding:0;font-size:18px}.share>p{margin:0 0 18px;color:var(--muted);font-size:14px}.share ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}.share a{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg);text-decoration:none;font-weight:600;font-size:15px}.share a:hover{border-color:var(--fg);background:var(--sunk)}.share a i{flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font:700 13px/1 var(--mono);font-style:normal;color:#fff}.share a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row label{color:var(--muted);font-size:14px}
 .chips{margin:18px 0 0;font-size:13px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .chip{text-decoration:none;color:var(--fg);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 12px;background:rgba(255,255,255,.05);font-family:var(--mono)}.chip:hover{border-color:var(--accent)}
@@ -278,6 +278,63 @@ export function fixAllInClaude(report: Report, url?: string): string {
 /** The Product Hunt "featured" badge for the launch, linked with Product Hunt's own tracking parameters. */
 const PRODUCT_HUNT_BADGE = `<p class="ph"><a href="https://www.producthunt.com/products/readme-score?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-readme-score" target="_blank" rel="noopener noreferrer"><img alt="README Score - Score your README out of 100, with a fix for every miss | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1296522&amp;theme=light&amp;t=1793234373643"></a></p>`;
 
+/** Each network's monogram and brand color, shown on its share tile. */
+const SHARE_BRAND: Record<string, [string, string]> = {
+	X: ["X", "#141413"],
+	Bluesky: ["B", "#1185fe"],
+	Threads: ["@", "#141413"],
+	LinkedIn: ["in", "#0a66c2"],
+	Facebook: ["f", "#1877f2"],
+	Reddit: ["r/", "#ff4500"],
+	"Hacker News": ["Y", "#ff6600"],
+	Email: ["@", "#66635c"],
+};
+
+/** Share links for a repository's score: plain URLs, so they work without JavaScript. */
+export function shareLinks(
+	report: Pick<Report, "score" | "repo">,
+	url: string,
+): { name: string; href: string }[] {
+	const name = report.repo
+		? `${report.repo.owner}/${report.repo.name}`
+		: "README";
+	const text = `${name} scores ${report.score}/100 for its README. Could its first screen and checks be better?`;
+	const t = encodeURIComponent(text);
+	const u = encodeURIComponent(url);
+	const title = encodeURIComponent(`${name}: ${report.score}/100 README score`);
+	return [
+		{ name: "X", href: `https://x.com/intent/post?text=${t}&url=${u}` },
+		{
+			name: "Bluesky",
+			href: `https://bsky.app/intent/compose?text=${encodeURIComponent(`${text} ${url}`)}`,
+		},
+		{
+			name: "Threads",
+			href: `https://www.threads.net/intent/post?text=${encodeURIComponent(`${text} ${url}`)}`,
+		},
+		{
+			name: "LinkedIn",
+			href: `https://www.linkedin.com/sharing/share-offsite/?url=${u}`,
+		},
+		{
+			name: "Facebook",
+			href: `https://www.facebook.com/sharer/sharer.php?u=${u}`,
+		},
+		{
+			name: "Reddit",
+			href: `https://www.reddit.com/submit?url=${u}&title=${title}`,
+		},
+		{
+			name: "Hacker News",
+			href: `https://news.ycombinator.com/submitlink?u=${u}&t=${title}`,
+		},
+		{
+			name: "Email",
+			href: `mailto:?subject=${title}&body=${encodeURIComponent(`${text}\n\n${url}`)}`,
+		},
+	];
+}
+
 export interface ResultOptions {
 	/** The result's own path ("owner/repo" or "owner/repo/tree/ref"); none for a pasted README. */
 	path?: string;
@@ -350,6 +407,19 @@ ${types}<p class="types">${esc(r.type.chosen ? "Type chosen on this page." : `De
 		}
 ${groups}
 ${embed}
+${
+	opts.path
+		? `<div class="share"><h2>Share this score</h2><p>Opens the network in a new tab with the link. README Score receives nothing.</p><ul>${shareLinks(
+				r,
+				`${base}/${opts.path}`,
+			)
+				.map(
+					(l) =>
+						`<li><a href="${esc(l.href)}" rel="noopener" target="_blank"><i style="background:${SHARE_BRAND[l.name][1]}" aria-hidden="true">${SHARE_BRAND[l.name][0]}</i>${esc(l.name)}</a></li>`,
+				)
+				.join("")}</ul></div>`
+		: ""
+}
 <h2>Score another</h2>${repoForm(root)}${pasteForm(root)}</div>`,
 	);
 }
