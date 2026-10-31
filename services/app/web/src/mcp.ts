@@ -60,7 +60,11 @@ export function readmeTools(
 						},
 					},
 				},
-				annotations: { readOnlyHint: true, openWorldHint: true },
+				annotations: {
+					title: "Score a README",
+					readOnlyHint: true,
+					openWorldHint: true,
+				},
 			},
 			async run(args) {
 				const repo = typeof args.repo === "string" ? args.repo : undefined;
