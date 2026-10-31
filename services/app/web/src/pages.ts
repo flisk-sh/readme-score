@@ -269,9 +269,6 @@ ${PRODUCT_HUNT_BADGE}</div>`,
 /** One link that opens Claude Code desktop app's claude://code/new deep link) with every failing check and its fix typed in. */
 export function fixAllInClaude(report: Report, url?: string): string {
 	const task = `Fix my README so every check below passes${report.repo ? ` (the ${report.repo.owner}/${report.repo.name} repo)` : ""}. Edit README.md (and any other file a fix names), change nothing else, then tell me what you changed.\n\n${summarize(report, url)}`;
-	const repo = report.repo
-		? `&repo=${report.repo.owner}/${report.repo.name}`
-		: "";
 	return `claude://code/new?q=${encodeURIComponent(task.slice(0, 6000))}`;
 }
 
