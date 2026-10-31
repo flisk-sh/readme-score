@@ -94,6 +94,29 @@ describe("pages", () => {
 		expect(prompt).toContain("https://tool.test/acme/bare");
 	});
 
+	it("offers share links for a repository's score, not for a pasted README", async () => {
+		const html = await (await app.request("/acme/bare")).text();
+		expect(html).toContain("Share this score");
+		for (const host of [
+			"https://x.com/intent/post?text=",
+			"https://bsky.app/intent/compose?text=",
+			"https://www.threads.net/intent/post?text=",
+			"https://www.linkedin.com/sharing/share-offsite/?url=",
+			"https://www.facebook.com/sharer/sharer.php?u=",
+			"https://www.reddit.com/submit?url=",
+			"https://news.ycombinator.com/submitlink?u=",
+			"mailto:?subject=",
+		]) {
+			expect(html).toContain(host);
+		}
+		expect(html).toContain(encodeURIComponent("https://tool.test/acme/bare"));
+		const pasted = await app.request(
+			"/paste",
+			form({ readme: "# Demo\n\nA tool." }),
+		);
+		expect(await pasted.text()).not.toContain("Share this score");
+	});
+
 	it("lists the fixes for a weak README, and rescores it as another type", async () => {
 		const html = await (await app.request("/acme/bare")).text();
 		expect(html).toContain("<h2>Fix first</h2>");
