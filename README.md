@@ -157,6 +157,7 @@ All optional.
 ```bash
 cd services/app/web
 bun run typecheck && bun run lint && bun test
+bun run e2e   # starts the server and asks it for pages, the API, a pasted README, the MCP tool and the CLI
 ```
 
 Each check has unit tests on the fixture READMEs in [`tests/fixtures/`](services/app/web/tests/fixtures). To check the
