@@ -110,7 +110,9 @@ async function loadTarget(
 ): Promise<ReadmeInput> {
 	// A folder that exists wins over the owner/repo reading of the same words (services/app is a path, not a repository).
 	const spec =
-		!/^[./~]/.test(target) && !existsSync(target) ? parseRepo(target) : undefined;
+		!/^[./~]/.test(target) && !existsSync(target)
+			? parseRepo(target)
+			: undefined;
 	const input = spec
 		? await loadRepo(spec, {
 				token: process.env.GITHUB_TOKEN,
