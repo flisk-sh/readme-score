@@ -77,7 +77,7 @@ describe("pages", () => {
 		expect(html).toContain("Grade A");
 		expect(html).toContain(`<code>${"a".repeat(7)}</code> (main)`);
 		expect(html).toContain(
-			`href="https://github.com/acme/rowcount/blob/${"a".repeat(40)}/README.md#L56"`,
+			`href="https://github.com/acme/rowcount/blob/${"a".repeat(40)}/README.md#L58"`,
 		);
 		expect(html).toContain(
 			"Detected: package.json has a &quot;bin&quot; field.",
@@ -198,6 +198,7 @@ describe("API, badge and MCP", () => {
 			"first-screen",
 			"readability",
 			"quickstart",
+			"clean",
 			"links",
 			"tagline",
 			"website",

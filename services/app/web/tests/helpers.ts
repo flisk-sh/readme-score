@@ -91,6 +91,7 @@ export const ROWCOUNT: FakeRepo = {
 	description: "rowcount: count the rows in any CSV file",
 	files: {
 		"README.md": fixture("cli-complete.md"),
+		".github/workflows/ci.yml": "name: ci\n",
 		"package.json": JSON.stringify(
 			{
 				name: "rowcount",

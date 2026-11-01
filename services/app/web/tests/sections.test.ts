@@ -53,7 +53,7 @@ describe("sections", () => {
 	it("finds every section of the complete CLI fixture at its heading", () => {
 		const r = sections(fixture("cli-complete.md"), "cli");
 		expect(r.every((s) => s.found)).toBe(true);
-		expect(r.find((s) => s.id === "license")?.found?.line).toBe(56);
+		expect(r.find((s) => s.id === "license")?.found?.line).toBe(58);
 	});
 
 	it("prefers the heading that matches the strongest synonym", () => {
@@ -110,13 +110,13 @@ describe("sections", () => {
 		expect(WEIGHTS.library.weights.prerequisites).toBe(1);
 	});
 
-	it("scores 35 for every section and names the line and heading to add for each miss", () => {
+	it("scores 27 for every section and names the line and heading to add for each miss", () => {
 		const full = score({
 			readme: fixture("cli-complete.md"),
 			readmePath: "README.md",
 			type: "cli",
 		}).groups[0];
-		expect([full.points, full.max]).toEqual([35, 35]);
+		expect([full.points, full.max]).toEqual([27, 27]);
 		const lib = score({
 			readme: fixture("library.md"),
 			readmePath: "README.md",

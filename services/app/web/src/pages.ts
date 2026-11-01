@@ -1,6 +1,8 @@
 // The pages, rendered on the server with no JavaScript (the Content-Security-Policy allows none): home, a result, the
 // checks with every threshold, about with the FAQ, errors and not found. Each one passes its own PageMeta to head(),
 // which writes every SEO tag. Everything that comes from a README is escaped.
+
+import { RESULT_WITHIN_LINES } from "./readme/clean-env";
 import {
 	BADGE,
 	H1_WITHIN_NONEMPTY_LINES,
@@ -220,6 +222,11 @@ export function homePage(
 			"Quickstart",
 			POINTS.quickstartFound + POINTS.quickstartLength + POINTS.translations,
 			"One block, few commands, translations that agree",
+		],
+		[
+			"Works from scratch",
+			POINTS.cleanEach * 5,
+			"Tools named, nothing to fill in, the files exist, a result shown, CI on a clean machine",
 		],
 		[
 			"Links",
@@ -501,6 +508,26 @@ export function checksPage(base: string): string {
 		[
 			"Translations give the same commands",
 			`README.<lang>.md, README-<lang>.md or README_<lang>.md next to the README or in ${codeList(TRANSLATION_FOLDERS)}: each one's quickstart must have the README's commands in the same order. ${codeList(FOLDER_COMMANDS)} lines may differ, since a translation may name its folder in its own language. Points shrink with the share that differ.`,
+		],
+		[
+			"Tools the quickstart needs are named",
+			"Each tool the commands run (node for npm, python for pip, docker…) is named outside the quickstart with a version, a word such as requires or install, or under a Prerequisites or Requirements heading.",
+		],
+		[
+			"Nothing left to fill in",
+			"No <placeholder>, YOUR_KEY, your-token or xxx in the quickstart commands: a reader who copies the block gets an error there.",
+		],
+		[
+			"Files the quickstart uses exist",
+			"For a quickstart that clones this repository: the files its commands name (./scripts/dev.sh, .env.example) and the build files bare commands need (package.json for npm ci, a compose file, Makefile, Cargo.toml, go.mod) are in the file tree. A file an earlier command makes (cp .env.example .env) is not looked for. Not checked without the tree, or when the commands run somewhere else.",
+		],
+		[
+			"Shows what a good run looks like",
+			`Output under a $ prompt, or within ${RESULT_WITHIN_LINES} lines after the block a URL (localhost), output, "you should see" or a check mark, so a reader can tell the setup worked.`,
+		],
+		[
+			"CI builds on a clean machine",
+			"A workflow file in the repository (GitHub Actions, GitLab CI, CircleCI, Azure Pipelines, Travis, Jenkins, Woodpecker, Drone, Bitbucket). It does not read the workflow, so it cannot tell that CI runs the quickstart: add a job that does.",
 		],
 		[
 			"Relative links resolve",
