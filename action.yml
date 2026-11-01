@@ -23,9 +23,9 @@ inputs:
     required: false
     default: "true"
   version:
-    description: "Version of the @flisk-sh/readme-score npm package to run. Pin it: a new release may reweigh a check."
+    description: "Empty (default) runs the scorer from this action's own checkout, so the tag you pin (@v1) is the version that runs. Set an @flisk-sh/readme-score npm version to run that instead."
     required: false
-    default: "0.1.0"
+    default: ""
   node-version:
     description: "Node.js version used to run the CLI (20 or later)."
     required: false
@@ -52,6 +52,10 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
+    # The scorer is TypeScript with no dependencies; Bun runs it from this action's checkout with no install or build.
+    - if: inputs.version == ''
+      uses: oven-sh/setup-bun@v2
+
     - id: run
       shell: bash
       env:
@@ -68,7 +72,11 @@ runs:
         common=("$target")
         [ -n "$RS_TYPE" ] && common+=(--type "$RS_TYPE")
         [ "$RS_WEBSITE" = "false" ] && common+=(--no-website)
-        cli=(npx -y "@flisk-sh/readme-score@${RS_VERSION}")
+        if [ -n "$RS_VERSION" ]; then
+          cli=(npx -y "@flisk-sh/readme-score@${RS_VERSION}")
+        else
+          cli=(bun "${GITHUB_ACTION_PATH}/packages/readme-score/src/bin.ts")
+        fi
 
         # The score shows on the job summary whether or not the gate passes.
         "${cli[@]}" "${common[@]}" --markdown >> "$GITHUB_STEP_SUMMARY"
