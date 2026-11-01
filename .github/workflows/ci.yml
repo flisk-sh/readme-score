@@ -54,6 +54,35 @@ jobs:
       - run: bun test
       - run: bun run build
 
+  readme-commands:
+    name: README commands
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # The setup commands in the README, run on a clean runner: the same install, the same start, the same requests.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.4.3
+      - name: Install and start (README quickstart)
+        run: |
+          cd services/app/web
+          bun install
+          bun run dev > "$RUNNER_TEMP/dev.log" 2>&1 &
+          for i in $(seq 1 30); do curl -sf localhost:4000/health && break; sleep 1; done
+          curl -sf localhost:4000/health | grep -q '"status":"ok"'
+      - name: Score a pasted README (README Examples)
+        run: |
+          curl -sf localhost:4000/api/score -H 'content-type: application/json' \
+            -d '{"readme": "# slugkit\n\nTurn titles into slugs.\n", "type": "library"}' | jq -e '.score >= 0'
+      - name: Score this folder with the CLI (README terminal section)
+        run: bun packages/readme-score/src/bin.ts . --no-website --min-score 90
+      - name: Show the server log
+        if: always()
+        run: cat "$RUNNER_TEMP/dev.log"
+
   image:
     name: Production image
     runs-on: ubuntu-latest

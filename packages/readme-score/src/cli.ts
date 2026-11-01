@@ -1,5 +1,6 @@
 // readme-score on the command line: the checks behind readme.flisk.si, run on a folder or a GitHub repository. No
 // model and no account: the same files always give the same score, so a README can be gated in CI like a lint error.
+import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
 import {
 	GitHubError,
@@ -107,7 +108,11 @@ async function loadTarget(
 	target: string,
 	website: boolean,
 ): Promise<ReadmeInput> {
-	const spec = !/^[./~]/.test(target) ? parseRepo(target) : undefined;
+	// A folder that exists wins over the owner/repo reading of the same words (services/app is a path, not a repository).
+	const spec =
+		!/^[./~]/.test(target) && !existsSync(target)
+			? parseRepo(target)
+			: undefined;
 	const input = spec
 		? await loadRepo(spec, {
 				token: process.env.GITHUB_TOKEN,
