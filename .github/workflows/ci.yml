@@ -79,6 +79,9 @@ jobs:
             -d '{"readme": "# slugkit\n\nTurn titles into slugs.\n", "type": "library"}' | jq -e '.score >= 0'
       - name: Score this folder with the CLI (README terminal section)
         run: bun packages/readme-score/src/bin.ts . --no-website --min-score 90
+      # Every page, the API, the paste form, the MCP tool and the CLI against a freshly started server.
+      - name: End to end
+        run: cd services/app/web && bun run e2e
       - name: Show the server log
         if: always()
         run: cat "$RUNNER_TEMP/dev.log"
