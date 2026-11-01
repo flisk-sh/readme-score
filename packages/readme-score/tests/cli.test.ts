@@ -76,6 +76,20 @@ describe("readme-score", () => {
 		expect(out).toContain("**How to fix**");
 	});
 
+	it("reads a folder that looks like owner/repo as a folder", async () => {
+		const dir = project();
+		const cwd = process.cwd();
+		process.chdir(dir);
+		try {
+			mkdirSync(join(dir, "services", "app"), { recursive: true });
+			const result = await run(["services/app", "--no-website"]);
+			expect(result.code).toBe(2);
+			expect(result.err).not.toContain("public GitHub repository");
+		} finally {
+			process.chdir(cwd);
+		}
+	});
+
 	it("exits 2 for a folder without a README and for bad usage", async () => {
 		const empty = mkdtempSync(join(tmpdir(), "readme-score-"));
 		mkdirSync(join(empty, "docs"));

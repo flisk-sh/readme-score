@@ -14,6 +14,9 @@ bun run dev
 
 Then open http://localhost:4000/flisk-sh/flisk, or paste a README on http://localhost:4000/.
 
+These commands are run on a clean Ubuntu runner on every push (the *README commands* job in
+[`ci.yml`](.github/workflows/ci.yml)), so a break shows up there before it shows up here.
+
 ## What is README Score?
 
 A README checker with no model in it. Every check is a fixed rule (a pattern, a count or a formula), so the same
@@ -52,13 +55,14 @@ thresholds are named constants in [`services/app/web/src/readme/`](services/app/
 ## In your terminal and CI
 
 ```bash
-npx @flisk-sh/readme-score                  # this folder
-npx @flisk-sh/readme-score honojs/hono      # a public GitHub repository
-npx @flisk-sh/readme-score --min-score 90 --markdown >> "$GITHUB_STEP_SUMMARY"
+bun packages/readme-score/src/bin.ts .                    # this folder, from a checkout
+bun packages/readme-score/src/bin.ts honojs/hono          # a public GitHub repository
+bun packages/readme-score/src/bin.ts . --min-score 90 --markdown >> "$GITHUB_STEP_SUMMARY"
 ```
 
-The npm package is not published yet. Until it is, run the same CLI from a checkout with Bun:
-`bun packages/readme-score/src/bin.ts <folder or owner/repo>`.
+Run these from the root of a clone, with `bun install` done as above. The npm package `@flisk-sh/readme-score` is not
+published yet, so `npx @flisk-sh/readme-score` does not work today; when it is, the same commands read
+`npx @flisk-sh/readme-score <folder or owner/repo>`.
 
 The same checks as the website, deterministic. Options: `--min-score <n>`, `--type cli|library|app|api`, `--no-website`,
 `--json`, `--markdown`. Exit codes: 0 passed, 1 below `--min-score`, 2 a README could not be read. Source:
@@ -79,7 +83,7 @@ version runs that package instead). Outputs: `score`, `grade`, `passed`, `report
 
 ## Prerequisites
 
-- [Bun](https://bun.sh/) 1.2 or newer (`bun --version`). Nothing else: no database and no API key.
+- [Bun](https://bun.sh/) 1.4 or newer (`bun --version`; CI runs 1.4.3). Nothing else: no database and no API key.
 - For `flisk up` only: Docker, Tilt and the [Flisk CLI](https://github.com/flisk-sh/flisk).
 
 ## Installation
