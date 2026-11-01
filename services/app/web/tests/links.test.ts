@@ -97,7 +97,7 @@ describe("relative links", () => {
 		const files = withTree.groups.find((g) => g.id === "links")?.checks[0];
 		expect([files?.pass, files?.points, files?.measured, files?.line]).toEqual([
 			false,
-			2,
+			1,
 			"3 of 8 links broken",
 			3,
 		]);

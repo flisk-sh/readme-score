@@ -37,11 +37,12 @@ weight and synonym, read from the code that scores.
 
 | Group | Points | What it looks at | From Flisk's scoreboard |
 | --- | --- | --- | --- |
-| Sections | 35 | Overview, key features, prerequisites, installation, usage, configuration, examples, troubleshooting, roadmap, contributing, license: headings matched against fixed synonym lists, weighted for a CLI tool, a library, a full-stack app or a backend API | new |
+| Sections | 27 | Overview, key features, prerequisites, installation, usage, configuration, examples, troubleshooting, roadmap, contributing, license: headings matched against fixed synonym lists, weighted for a CLI tool, a library, a full-stack app or a backend API | new |
 | First screen | 20 | A title within 5 non-empty lines, an install command within 40 lines, a picture within 20, at most 6 badges and 250 words before the first code block | `readme-first-screen` |
 | Readability | 10 | Flesch reading ease of the prose: 60 or more for every point, 30 or less for none; the longest sentences and infrastructure words listed | `readme-readability` |
 | Quickstart | 10 | One shell block that installs the project, at most 6 commands, and translated READMEs that give the same commands | `steps-to-first-healthy`, `translation-drift` |
-| Links | 10 | Relative links that name a file in the repository with the right case, and #anchors that match a heading | `doc-links` |
+| Works from scratch | 10 | Static stand-ins for "the setup commands work in a clean environment" (the README is not run): every tool the quickstart runs is named as a requirement, no `<placeholder>` or `YOUR_KEY` left to fill in, the files and build files the commands use are in the repository, the README shows what a good run looks like, and a CI workflow exists | new |
+| Links | 8 | Relative links that name a file in the repository with the right case, and #anchors that match a heading | `doc-links` |
 | Tagline | 5 | One description in the README H1, the package manifests, llms.txt and the GitHub About box; one spelling of the name | `tagline-consistency`, plus name spelling |
 | Website | 10 | The product's website (the repository's homepage, or `homepage` in package.json): its `<title>`, `og:title` or `<h1>` uses the README H1's wording, its meta description at least half the key words of the README's opening, and it leads with the README quickstart's first command and install command | new |
 

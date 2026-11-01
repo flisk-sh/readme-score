@@ -11,6 +11,8 @@ npm install -g rowcount
 rowcount sales.csv
 ```
 
+It prints `1204 rows`.
+
 ## Overview
 
 You have a CSV file and want to know how many rows it has. A sheet may freeze on a big one. Run rowcount and you get the number at once.

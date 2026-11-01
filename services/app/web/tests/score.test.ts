@@ -34,6 +34,7 @@ describe("score", () => {
 			POINTS.quickstartFound +
 			POINTS.quickstartLength +
 			POINTS.translations +
+			POINTS.cleanEach * 5 +
 			POINTS.fileLinks +
 			POINTS.anchors +
 			POINTS.tagline +
@@ -48,10 +49,10 @@ describe("score", () => {
 	it("gives the complete CLI fixture 100, grade A, with no fixes", () => {
 		const r = score(complete);
 		expect([r.score, r.grade, r.type.type]).toEqual([100, "A", "cli"]);
-		expect(r.counts).toEqual({ passed: 23, failed: 0, skipped: 5 });
+		expect(r.counts).toEqual({ passed: 27, failed: 0, skipped: 6 });
 		expect(r.groups.flatMap((g) => g.checks).filter((c) => c.fix)).toEqual([]);
-		// Translations and the two website checks have nothing to look at; their 15 points leave the total.
-		expect(r.available).toBe(85);
+		// Translations and the two website checks and the files check have nothing to look at; their 17 points leave the total.
+		expect(r.available).toBe(83);
 	});
 
 	it("gives the same report for the same input, every time", () => {
@@ -88,6 +89,8 @@ describe("score", () => {
 			.filter((c) => c.pass === null);
 		expect(skipped.map((c) => [c.id, c.measured])).toEqual([
 			["quickstart.translations", "not checked: needs the repository"],
+			["clean.files", "not checked: needs the repository"],
+			["clean.ci", "not checked: needs the repository"],
 			["links.files", "not checked: needs the repository"],
 			["tagline.distinct", "1 source: nothing to compare"],
 			[
@@ -107,7 +110,7 @@ describe("score", () => {
 				'no website: set the repository\'s homepage on GitHub (the gear next to About) or "homepage" in package.json',
 			],
 		]);
-		expect(r.available).toBe(77);
+		expect(r.available).toBe(74);
 		expect(r.score).toBe(100);
 	});
 

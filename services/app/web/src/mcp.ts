@@ -67,7 +67,7 @@ export function readmeTools(
 				name: "score_readme",
 				title: "Improve a README",
 				description:
-					"Scores a README out of 100 with deterministic checks (no model): the sections a reader expects for the project type, the first screen, readability, the quickstart, links, the tagline, and whether the website says the same. Answers the score, the failing checks with their line and a fix each, and a link to the full report. Give a public GitHub repository, or the README's Markdown.",
+					"Scores a README out of 100 with deterministic checks (no model): the sections a reader expects for the project type, the first screen, readability, the quickstart, whether the setup works from scratch, links, the tagline, and whether the website says the same. Answers the score, the failing checks with their line and a fix each, and a link to the full report. Give a public GitHub repository, or the README's Markdown.",
 				inputSchema: {
 					type: "object",
 					properties: {

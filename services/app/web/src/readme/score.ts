@@ -10,6 +10,15 @@ import {
 	nameSpellings,
 } from "./branding";
 import {
+	hasCi,
+	missingRepoFiles,
+	placeholders,
+	RESULT_WITHIN_LINES,
+	runtimes,
+	showsResult,
+	unnamedPrerequisites,
+} from "./clean-env";
+import {
 	firstScreen,
 	H1_WITHIN_NONEMPTY_LINES,
 	IMAGE_WITHIN_LINES,
@@ -62,15 +71,17 @@ import {
 /** Points per check. With every check applicable they add up to 100. */
 export const POINTS = {
 	/** Shared by the sections in proportion to their weight for the project type. */
-	sections: 35,
+	sections: 27,
 	/** Each of the five first-screen checks. */
 	firstScreenEach: 4,
 	readability: 10,
 	quickstartFound: 2,
 	quickstartLength: 3,
 	translations: 5,
-	fileLinks: 5,
-	anchors: 5,
+	/** Each of the five clean-environment checks: tools named, nothing to fill in, files exist, a result shown, CI. */
+	cleanEach: 2,
+	fileLinks: 4,
+	anchors: 4,
 	tagline: 3,
 	/** The H1's spelling of the name used everywhere in the README's prose. */
 	nameSpelling: 2,
@@ -489,6 +500,162 @@ function quickstartGroup(
 	return finish("quickstart", "Quickstart", checks);
 }
 
+/** Whether the quickstart can work on a machine with nothing but the README: the gates behind "does it run clean?". */
+function cleanGroup(input: ReadmeInput, names: string[]): Group {
+	const block = quickstart(input.readme, names);
+	const commands = block ? shellCommands(block.body) : [];
+	const none = "no quickstart";
+	const tree = input.truncated ? undefined : input.paths;
+	const skip = (
+		id: string,
+		title: string,
+		limit: string,
+		measured: string,
+	): Check =>
+		check({
+			id,
+			title,
+			pass: null,
+			max: POINTS.cleanEach,
+			measured,
+			limit,
+		});
+	const checks: Check[] = [];
+
+	const tools = runtimes(commands);
+	const unnamed = block ? unnamedPrerequisites(input.readme, block, tools) : [];
+	checks.push(
+		check({
+			id: "clean.prerequisites",
+			title: "Tools the quickstart needs are named",
+			pass: block !== null && unnamed.length === 0,
+			max: POINTS.cleanEach,
+			measured: !block
+				? none
+				: tools.length
+					? unnamed.length
+						? `${unnamed.join(", ")} not named`
+						: `${tools.join(", ")} named`
+					: "no tool needed",
+			limit:
+				"every tool the commands run is named with a version or as a requirement",
+			...(block ? { line: block.line } : {}),
+			fix: block
+				? `Say what a clean machine needs before line ${block.line}: ${unnamed.join(", ")}. A line such as "Requires Node 20 or newer" under a Requirements heading is enough.`
+				: "Add a quickstart block first.",
+			...(unnamed.length
+				? {
+						snippet: `## Requirements\n\n${unnamed.map((t) => `- ${t} (version)`).join("\n")}`,
+					}
+				: {}),
+		}),
+	);
+
+	const open = placeholders(commands);
+	checks.push(
+		check({
+			id: "clean.placeholders",
+			title: "Nothing left to fill in",
+			pass: block !== null && open.length === 0,
+			max: POINTS.cleanEach,
+			measured: !block
+				? none
+				: open.length
+					? plural(open.length, "placeholder")
+					: "none",
+			limit: "no <angle-bracket>, YOUR_KEY or xxx values in the commands",
+			...(block ? { line: block.line } : {}),
+			fix: block
+				? "A reader who copies the block gets an error where a placeholder is. Give a value that works as it stands, or put the step that gets the value before it."
+				: "Add a quickstart block first.",
+			...(open.length
+				? {
+						findings: open.map((o) => ({
+							line: block?.line,
+							text: `${o.token} in "${o.command}"`,
+						})),
+					}
+				: {}),
+		}),
+	);
+
+	const missing = block ? missingRepoFiles(commands, tree, names) : null;
+	checks.push(
+		missing === null
+			? skip(
+					"clean.files",
+					"Files the quickstart uses exist",
+					"every file or build file the commands use is in the repository",
+					!block
+						? none
+						: tree
+							? "not checked: the commands do not run in a clone of this repository"
+							: "not checked: needs the repository",
+				)
+			: check({
+					id: "clean.files",
+					title: "Files the quickstart uses exist",
+					pass: missing.length === 0,
+					max: POINTS.cleanEach,
+					measured: missing.length
+						? plural(missing.length, "missing file")
+						: "all there",
+					limit:
+						"every file or build file the commands use is in the repository",
+					...(block ? { line: block.line } : {}),
+					fix: "A fresh clone does not have these. Commit them, or add the command that makes them before the one that uses them.",
+					...(missing.length
+						? {
+								findings: missing.map((m) => ({
+									line: block?.line,
+									text: `${m.file} for "${m.command}"`,
+								})),
+							}
+						: {}),
+				}),
+	);
+
+	const result = block ? showsResult(input.readme, block) : false;
+	checks.push(
+		check({
+			id: "clean.result",
+			title: "Shows what a good run looks like",
+			pass: result,
+			max: POINTS.cleanEach,
+			measured: !block ? none : result ? "shown" : "not shown",
+			limit: `output, a URL or "you should see" in or within ${RESULT_WITHIN_LINES} lines after the block`,
+			...(block ? { line: block.line } : {}),
+			fix: block
+				? "Show the output of the last command, or the address that opens, so a reader can tell the setup worked on their machine."
+				: "Add a quickstart block first.",
+			snippet: "You should see:\n\n```text\n<the last command's output>\n```",
+		}),
+	);
+
+	const ci = hasCi(tree);
+	checks.push(
+		ci === null
+			? skip(
+					"clean.ci",
+					"CI builds on a clean machine",
+					"a workflow file in the repository",
+					input.withoutTree
+						? `not checked: ${input.withoutTree}`
+						: "not checked: needs the repository",
+				)
+			: check({
+					id: "clean.ci",
+					title: "CI builds on a clean machine",
+					pass: ci,
+					max: POINTS.cleanEach,
+					measured: ci ? "workflow found" : "none",
+					limit: "a workflow file in the repository",
+					fix: "Add a CI workflow that runs the quickstart's commands on a fresh runner on every push, so the README is tested, not trusted.",
+				}),
+	);
+	return finish("clean", "Works from scratch", checks);
+}
+
 function linksGroup(input: ReadmeInput): Group {
 	const anchors = brokenAnchors(input.readme, input.readmePath);
 	const anchorFindings = anchors.broken.map((b) => ({
@@ -861,6 +1028,7 @@ export function score(input: ReadmeInput): Report {
 		firstScreenGroup(input, names, type),
 		readabilityGroup(input),
 		quickstartGroup(input, names, type),
+		cleanGroup(input, names),
 		linksGroup(input),
 		taglineGroup(input, names),
 		websiteGroup(input, names),
