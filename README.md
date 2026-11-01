@@ -57,6 +57,9 @@ npx @flisk-sh/readme-score honojs/hono      # a public GitHub repository
 npx @flisk-sh/readme-score --min-score 90 --markdown >> "$GITHUB_STEP_SUMMARY"
 ```
 
+The npm package is not published yet. Until it is, run the same CLI from a checkout with Bun:
+`bun packages/readme-score/src/bin.ts <folder or owner/repo>`.
+
 The same checks as the website, deterministic. Options: `--min-score <n>`, `--type cli|library|app|api`, `--no-website`,
 `--json`, `--markdown`. Exit codes: 0 passed, 1 below `--min-score`, 2 a README could not be read. Source:
 [`packages/readme-score`](packages/readme-score).
@@ -71,7 +74,8 @@ As a GitHub Action, the score appears on the job summary and the job fails below
 ```
 
 Inputs: `path`, `min-score`, `type`, `website` (`false` leaves out the checks that read the product's website),
-`version` (the npm package, pinned). Outputs: `score`, `grade`, `passed`, `report`.
+`version` (empty runs the scorer from the action's own checkout, so the tag you pin is the version that runs; an npm
+version runs that package instead). Outputs: `score`, `grade`, `passed`, `report`.
 
 ## Prerequisites
 
