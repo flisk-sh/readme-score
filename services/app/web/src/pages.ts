@@ -99,6 +99,7 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0}th,td{tex
 .tbl{overflow-x:auto}
 dt{font-weight:700;margin-top:20px;font-size:17px}dd{margin:6px 0 0;color:var(--muted)}
 .prose{padding:56px 0 0}.prose h1{text-align:left;margin:0 0 14px;max-width:none}.prose .lede{margin:0 0 28px}
+footer .dh{margin:16px 0 0}footer .dh img{display:block}
 footer{margin-top:96px;border-top:1px solid var(--line);padding:26px 0 44px;color:var(--muted);font-size:14px}
 .preview{--fg:#141413;--muted:#5d5a53;--line:#e6e3da;--sunk:#f3f1ec;--pass:#18794e;--fail:#c22a1f;margin:40px auto 0;max-width:560px;text-align:left;background:#fff;color:var(--fg);border-radius:18px;padding:18px;box-shadow:0 40px 100px -30px rgba(91,124,255,.65),0 0 0 1px rgba(255,255,255,.08)}
 .preview .top{display:flex;align-items:center;gap:10px;font:600 12.5px var(--mono);color:var(--muted);margin-bottom:10px}.preview .top em{margin-left:auto;white-space:nowrap;font:600 11px ui-sans-serif,system-ui,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.08em;background:var(--sunk);border-radius:6px;padding:3px 8px}
@@ -122,7 +123,7 @@ ${head(base, meta)}
 <style>${STYLE}</style></head><body>
 <header class="top stage"><nav class="wrap" aria-label="Site"><a href="${root}/"><img src="${root}/icon.svg" alt="" width="26" height="26">${esc(SITE.name)}</a><a href="${root}/checks">Checks</a><a href="${root}/about">About</a></nav></header>
 <main>${body}</main>
-<footer><div class="wrap">${esc(SITE.name)}: no AI, no JavaScript, no cookies, nothing stored. <a href="${SITE.repo}">Open source</a>, made by <a href="${SITE.author.url}">${esc(SITE.author.name)}</a>.</div></footer>
+<footer><div class="wrap">${esc(SITE.name)}: no AI, no JavaScript, no cookies, nothing stored. <a href="${SITE.repo}">Open source</a>, made by <a href="${SITE.author.url}">${esc(SITE.author.name)}</a>.<p class="dh"><a href="https://devhunt.org/tool/readme-score" target="_blank" rel="noopener" title="README Score on DevHunt"><img src="https://devhunt.org/badge/readme-score.svg" alt="README Score - Featured on DevHunt" width="220" height="54" loading="lazy"></a></p></div></footer>
 </body></html>`;
 }
 
