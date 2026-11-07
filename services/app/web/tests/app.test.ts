@@ -42,11 +42,28 @@ describe("pages", () => {
 		);
 		expect(html).toContain('rel="noopener noreferrer"');
 		expect(res.headers.get("content-security-policy")).toContain(
-			"img-src 'self' https://api.producthunt.com",
+			"img-src 'self' https://api.producthunt.com https://devhunt.org",
 		);
 		expect(await (await app.request("/about")).text()).not.toContain(
 			"producthunt.com",
 		);
+	});
+
+	it("shows the DevHunt badge in the footer of every page, and lets the policy load its image", async () => {
+		for (const path of ["/", "/about"]) {
+			const res = await app.request(path);
+			const html = await res.text();
+			const footer = html.slice(html.indexOf("<footer>"));
+			expect(footer).toContain(
+				'<a href="https://devhunt.org/tool/readme-score" target="_blank" rel="noopener" title="README Score on DevHunt"><img src="https://devhunt.org/badge/readme-score.svg" alt="README Score - Featured on DevHunt" width="220" height="54" loading="lazy"></a>',
+			);
+			expect(footer).toContain(
+				"no AI, no JavaScript, no cookies, nothing stored",
+			);
+			expect(res.headers.get("content-security-policy")).toContain(
+				"img-src 'self' https://api.producthunt.com https://devhunt.org;",
+			);
+		}
 	});
 
 	it("shows a sample result on the home page, worked out by the checks", async () => {

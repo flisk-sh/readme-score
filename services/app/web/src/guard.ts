@@ -114,7 +114,7 @@ export function securityHeaders(): Record<string, string> {
 		"content-security-policy": [
 			"default-src 'none'",
 			"style-src 'unsafe-inline'",
-			"img-src 'self' https://api.producthunt.com",
+			"img-src 'self' https://api.producthunt.com https://devhunt.org",
 			"media-src 'self'",
 			"base-uri 'none'",
 			"form-action 'self'",
