@@ -25,13 +25,17 @@ const form = (fields: Record<string, string>) => ({
 });
 
 describe("pages", () => {
-	it("serves the home page with a policy that allows no scripts", async () => {
+	it("serves the home page with a policy that allows only the Flisk bar script", async () => {
 		const res = await app.request("/");
 		expect(res.status).toBe(200);
 		const csp = res.headers.get("content-security-policy");
 		expect(csp).toContain("default-src 'none'");
-		expect(csp).not.toContain("script-src");
-		expect(await res.text()).not.toContain("<script>");
+		expect(csp).toContain("script-src https://flisk.si;");
+		const html = await res.text();
+		expect(html).not.toContain("<script>");
+		expect(html).toContain(
+			'<script src="https://flisk.si/assets/bar.js" defer></script>',
+		);
 	});
 
 	it("shows the Product Hunt badge on the home page only, and lets the policy load its image", async () => {
