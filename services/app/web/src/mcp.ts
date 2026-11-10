@@ -170,7 +170,7 @@ async function handleOne(
 				},
 				serverInfo: {
 					name: SITE.id,
-					title: SITE.name,
+					title: `${SITE.name} MCP`,
 					version: "1.0.0",
 				},
 				instructions: SITE.description,
