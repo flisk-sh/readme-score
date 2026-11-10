@@ -1,9 +1,58 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="README Score: Your README, scored out of 100, with a fix for every miss"><title>README Score</title>
-  <rect width="1200" height="630" fill="#fbfaf7"/>
-  <g transform="translate(96 96) scale(2)"><rect width="64" height="64" rx="14" fill="#2d4cc8"/><rect x="14" y="10" width="30" height="40" rx="4" fill="#fbfaf7"/><rect x="19" y="18" width="20" height="3.5" rx="1.75" fill="#2d4cc8"/><rect x="19" y="26" width="16" height="3.5" rx="1.75" fill="#9aa6d6"/><rect x="19" y="34" width="12" height="3.5" rx="1.75" fill="#9aa6d6"/><circle cx="44" cy="45" r="12" fill="#18794e" stroke="#2d4cc8" stroke-width="3"/><path d="M38.5 45.2l3.8 3.8 7.4-7.6" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></g>
-  <text x="250" y="178" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="60" font-weight="800" fill="#1d1c1a">README Score</text>
-  <text x="96" y="340" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="64" font-weight="800" fill="#1d1c1a" letter-spacing="-1.5">Your README, scored,</text>
-  <text x="96" y="420" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="64" font-weight="800" fill="#1d1c1a" letter-spacing="-1.5">with a fix for every miss</text>
-  <text x="96" y="530" font-family="ui-monospace, Menlo, monospace" font-size="34" fill="#6b6862">readme.flisk.si/owner/repo · no AI</text>
-  <g transform="translate(900 96)"><rect width="204" height="164" rx="24" fill="#1d1c1a"/><text x="102" y="100" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="64" font-weight="800" fill="#fbfaf7">92</text><text x="102" y="140" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="#a29f97">out of 100</text></g>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="README Score: Your README, scored out of 100."><title>README Score</title>
+  <!-- Share card, built to the Flisk card spec. Render: rsvg-convert -w 1200 -h 630 (or the repo's own icons script). -->
+  <defs>
+    <radialGradient id="glow" cx="0.1" cy="0.08" r="0.75"><stop offset="0" stop-color="#1c2a64"/><stop offset="1" stop-color="#0a0a0e"/></radialGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0V48" fill="none" stroke="#ffffff" stroke-opacity="0.04"/></pattern>
+    <linearGradient id="rule" x1="0" x2="1"><stop offset="0" stop-color="#5c7cfa" stop-opacity="0"/><stop offset="0.25" stop-color="#5c7cfa"/><stop offset="1" stop-color="#5c7cfa" stop-opacity="0.15"/></linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="#0b0b10"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <g transform="translate(64 64) scale(0.875)"><rect width="64" height="64" rx="14" fill="#2d4cc8"/><rect x="14" y="10" width="30" height="40" rx="4" fill="#fbfaf7"/><rect x="19" y="18" width="20" height="3.5" rx="1.75" fill="#2d4cc8"/><rect x="19" y="26" width="16" height="3.5" rx="1.75" fill="#9aa6d6"/><rect x="19" y="34" width="12" height="3.5" rx="1.75" fill="#9aa6d6"/><circle cx="44" cy="45" r="12" fill="#18794e" stroke="#2d4cc8" stroke-width="3"/><path d="M38.5 45.2l3.8 3.8 7.4-7.6" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <text x="140" y="99" font-family="'JetBrains Mono', ui-monospace, Menlo, monospace" font-size="19" font-weight="700" letter-spacing="4.6" fill="#91a7ff">README SCORE / NO AI</text>
+  <g font-family="Inter, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="56" font-weight="800" fill="#ffffff" letter-spacing="-1.2">
+    <text x="64" y="328">Your README,</text>
+    <text x="64" y="392">scored out of 100.</text>
+  </g>
+  <g font-family="Inter, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="24" fill="#9a9aa6">
+    <text x="64" y="446">With a fix for every miss.</text>
+  </g>
+  <g font-family="Inter, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="19" font-weight="700" fill="#f1f3f5" text-anchor="middle">
+    <rect x="64" y="476" width="97" height="44" rx="22" fill="#15161d" stroke="#34374a"/><text x="112.5" y="505">No AI</text>
+    <rect x="173" y="476" width="267" height="44" rx="22" fill="#15161d" stroke="#34374a"/><text x="306.5" y="505">Same score every time</text>
+    <rect x="452" y="476" width="86" height="44" rx="22" fill="#15161d" stroke="#34374a"/><text x="495" y="505">Free</text>
+  </g>
+  <rect x="64" y="546" width="520" height="2" fill="url(#rule)"/>
+  <text x="64" y="592" font-family="'JetBrains Mono', ui-monospace, Menlo, monospace" font-size="28" fill="#e9ecef">readme.flisk.si</text>
+  <g transform="translate(624 64)">
+    <defs><linearGradient id="ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b197fc"/><stop offset="1" stop-color="#748ffc"/></linearGradient></defs>
+    <rect width="620" height="500" rx="18" fill="#101118" stroke="#2a2d38"/>
+    <circle cx="28" cy="28" r="6" fill="#3a3d48"/><circle cx="48" cy="28" r="6" fill="#3a3d48"/><circle cx="68" cy="28" r="6" fill="#3a3d48"/>
+    <text x="96" y="34" font-family="'JetBrains Mono', ui-monospace, Menlo, monospace" font-size="16" fill="#868e96">readme.flisk.si/flisk-sh/flisk</text>
+    <rect x="0" y="56" width="620" height="1" fill="#2a2d38"/>
+    <circle cx="110" cy="152" r="66" fill="none" stroke="#24263a" stroke-width="14"/>
+    <circle cx="110" cy="152" r="66" fill="none" stroke="url(#ring)" stroke-width="14" stroke-linecap="round" stroke-dasharray="394.0 414.7" transform="rotate(-90 110 152)"/>
+    <text x="110" y="166" font-family="Inter, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="46" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="-1">95</text>
+    <text x="110" y="190" font-family="Inter, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" fill="#9a9aa6" text-anchor="middle">out of 100</text>
+    <text x="210" y="128" font-family="Inter, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="28" font-weight="800" fill="#ffffff">flisk-sh/flisk</text>
+    <rect x="210" y="144" width="92" height="32" rx="16" fill="#2b8a3e" fill-opacity="0.28"/><text x="256" y="166" font-family="Inter, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#8ce99a" text-anchor="middle">Grade A</text>
+    <text x="210" y="206" font-family="Inter, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="17" fill="#9a9aa6">28 checks pass, 3 fail. Each fail has a fix.</text>
+    <text x="28" y="258" font-family="'JetBrains Mono', ui-monospace, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="1.6" fill="#868e96">SECTIONS 27/27</text>
+    <rect x="28" y="272" width="564" height="50" rx="10" fill="#14151d" stroke="#2a2d38"/><rect x="28" y="272" width="4" height="50" rx="2" fill="#40c057"/>
+      <rect x="48" y="286" width="52" height="22" rx="11" fill="#40c057" fill-opacity="0.16"/><text x="74" y="302" font-family="'JetBrains Mono', ui-monospace, Menlo, monospace" font-size="12" font-weight="700" letter-spacing="1" fill="#69db7c" text-anchor="middle">PASS</text>
+      <text x="116" y="303" font-family="Inter, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="18" font-weight="600" fill="#f1f3f5">Overview</text>
+      <text x="560" y="303" font-family="'JetBrains Mono', ui-monospace, Menlo, monospace" font-size="16" fill="#adb5bd" text-anchor="end">2.4/2.4</text>
+    <rect x="28" y="330" width="564" height="50" rx="10" fill="#14151d" stroke="#2a2d38"/><rect x="28" y="330" width="4" height="50" rx="2" fill="#40c057"/>
+      <rect x="48" y="344" width="52" height="22" rx="11" fill="#40c057" fill-opacity="0.16"/><text x="74" y="360" font-family="'JetBrains Mono', ui-monospace, Menlo, monospace" font-size="12" font-weight="700" letter-spacing="1" fill="#69db7c" text-anchor="middle">PASS</text>
+      <text x="116" y="361" font-family="Inter, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="18" font-weight="600" fill="#f1f3f5">Installation</text>
+      <text x="560" y="361" font-family="'JetBrains Mono', ui-monospace, Menlo, monospace" font-size="16" fill="#adb5bd" text-anchor="end">3.5/3.5</text>
+    <rect x="28" y="388" width="564" height="50" rx="10" fill="#14151d" stroke="#2a2d38"/><rect x="28" y="388" width="4" height="50" rx="2" fill="#40c057"/>
+      <rect x="48" y="402" width="52" height="22" rx="11" fill="#40c057" fill-opacity="0.16"/><text x="74" y="418" font-family="'JetBrains Mono', ui-monospace, Menlo, monospace" font-size="12" font-weight="700" letter-spacing="1" fill="#69db7c" text-anchor="middle">PASS</text>
+      <text x="116" y="419" font-family="Inter, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="18" font-weight="600" fill="#f1f3f5">Key features</text>
+      <text x="560" y="419" font-family="'JetBrains Mono', ui-monospace, Menlo, monospace" font-size="16" fill="#adb5bd" text-anchor="end">2.4/2.4</text>
+    <rect x="28" y="446" width="564" height="50" rx="10" fill="#14151d" stroke="#2a2d38"/><rect x="28" y="446" width="4" height="50" rx="2" fill="#fa5252"/>
+      <rect x="48" y="460" width="52" height="22" rx="11" fill="#fa5252" fill-opacity="0.16"/><text x="74" y="476" font-family="'JetBrains Mono', ui-monospace, Menlo, monospace" font-size="12" font-weight="700" letter-spacing="1" fill="#ff8787" text-anchor="middle">FAIL</text>
+      <text x="116" y="477" font-family="Inter, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="18" font-weight="600" fill="#f1f3f5">One tagline everywhere</text>
+      <text x="560" y="477" font-family="'JetBrains Mono', ui-monospace, Menlo, monospace" font-size="16" fill="#adb5bd" text-anchor="end">1.5/3</text>
+  </g>
 </svg>
