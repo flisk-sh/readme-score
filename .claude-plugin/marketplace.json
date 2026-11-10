@@ -1,6 +1,6 @@
 {
   "name": "flisk-readme-score",
-  "description": "Flisk's README Checker: a score out of 100 for your README and a fix for each problem.",
+  "description": "Flisk's README Score plugin: a score out of 100 for your README and a fix for each problem.",
   "owner": {
     "name": "Flisk",
     "url": "https://flisk.sh"

@@ -1,6 +1,6 @@
 {
   "name": "readme-checker",
-  "displayName": "Improve My README",
+  "displayName": "README Score plugin",
   "version": "1.0.0",
   "description": "Improve your README. Get a score out of 100 and a fix for each problem, with the line to change. Free, no account.",
   "author": {
