@@ -16,7 +16,7 @@
     "e2e": "bun e2e/run.ts"
   },
   "dependencies": {
-    "hono": "^4.13.16"
+    "hono": "^4.13.17"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.6",
