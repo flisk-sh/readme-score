@@ -11,3 +11,5 @@ services/platform/
 video/out/
 video/film.run.html
 video/.chrome-profile/
+.dev.vars*
+.wrangler/
