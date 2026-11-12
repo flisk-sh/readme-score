@@ -117,9 +117,9 @@ All optional.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `PORT` | 4000 | Where to listen (10000 on Render) |
+| `PORT` | 4000 | Where to listen (Bun server only; the Worker has no port) |
 | `PUBLIC_URL` | the request's own address | The address people use, for canonical links, the social card and the sitemap |
-| `TRUST_PROXY` | `none` | `last-forwarded` on Render, `cloudflare` behind Cloudflare's proxy: which header names the client, for rate limits |
+| `TRUST_PROXY` | `none` | `last-forwarded` behind a proxy that appends to `X-Forwarded-For`, `cloudflare` on Workers and behind Cloudflare's proxy: which header names the client, for rate limits |
 | `CALLS_PER_MINUTE` | 120 | Fresh GitHub reads, API and MCP calls per client per minute |
 | `GITHUB_TOKEN` | none | Raises GitHub's limit for the server from 60 to 5,000 API calls an hour; a fine-grained token with no permissions is enough |
 
@@ -173,8 +173,8 @@ It exits 1 when the first-screen, readability or tagline results differ.
 
 ## Deploy
 
-One free Render web service from [`render.yaml`](render.yaml), with readme.flisk.si as a CNAME on Cloudflare. The
-steps, the token and Render's two-domain limit are in [DEPLOY.md](DEPLOY.md).
+One Cloudflare Worker (free plan) serves readme.flisk.si, from [`services/app/web/wrangler.toml`](services/app/web/wrangler.toml).
+The steps and the token are in [DEPLOY.md](DEPLOY.md).
 
 ## Roadmap
 
