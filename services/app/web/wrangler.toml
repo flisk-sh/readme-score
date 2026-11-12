@@ -1,0 +1,12 @@
+# readme.flisk.si runs on Cloudflare Workers. Deploy: bunx wrangler@4 deploy
+# The custom domain needs no DNS record of its own; Cloudflare creates it.
+name = "readme-score"
+main = "src/worker.ts"
+compatibility_date = "2026-10-01"
+# website.ts resolves host names with node:dns before it reads a product's site.
+compatibility_flags = ["nodejs_compat"]
+routes = [{ pattern = "readme.flisk.si", custom_domain = true }]
+
+[vars]
+PUBLIC_URL = "https://readme.flisk.si/"
+TRUST_PROXY = "cloudflare"
