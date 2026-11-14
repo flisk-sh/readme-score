@@ -113,7 +113,8 @@ export function securityHeaders(): Record<string, string> {
 	return {
 		"content-security-policy": [
 			"default-src 'none'",
-			"script-src https://flisk.si",
+			"script-src https://flisk.si https://flisk.sh",
+			"connect-src https://analytics.flisk.si",
 			"style-src 'unsafe-inline'",
 			"img-src 'self' https://api.producthunt.com https://devhunt.org",
 			"media-src 'self'",

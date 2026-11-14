@@ -30,11 +30,12 @@ describe("pages", () => {
 		expect(res.status).toBe(200);
 		const csp = res.headers.get("content-security-policy");
 		expect(csp).toContain("default-src 'none'");
-		expect(csp).toContain("script-src https://flisk.si;");
+		expect(csp).toContain("script-src https://flisk.si https://flisk.sh;");
+		expect(csp).toContain("connect-src https://analytics.flisk.si;");
 		const html = await res.text();
 		expect(html).not.toContain("<script>");
 		expect(html).toContain(
-			'<script src="https://flisk.si/assets/bar.js" defer></script>',
+			'<script defer data-domain="readme.flisk.si" src="https://flisk.sh/a.js"></script><script src="https://flisk.si/assets/bar.js" defer></script>',
 		);
 	});
 
