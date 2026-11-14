@@ -40,6 +40,10 @@ describe.each(["/", "/about", "/checks", "/acme/rowcount"])(
 		it("has one title, a description, a canonical link and a social card", async () => {
 			const html = await page(path);
 			expect(html.match(/<title>/g)).toHaveLength(1);
+			// 10 to 70 characters, the range Citable scores (a longer title is cut in results)
+			const title = /<title>([^<]+)<\/title>/.exec(html)?.[1] ?? "";
+			expect(title.length).toBeGreaterThanOrEqual(10);
+			expect(title.length).toBeLessThanOrEqual(70);
 			expect(html.match(/<h1[ >]/g)).toHaveLength(1);
 			const description = attr(
 				html,
