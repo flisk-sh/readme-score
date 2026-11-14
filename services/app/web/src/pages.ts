@@ -252,7 +252,7 @@ export function homePage(
 		base,
 		{
 			path: "",
-			title: `${SITE.name}: ${SITE.tagline}`,
+			title: SITE.homeTitle,
 			description: SITE.description,
 		},
 		`<section class="hero stage"><div class="wrap"><h1 class="grad">${esc(SITE.tagline)}</h1>

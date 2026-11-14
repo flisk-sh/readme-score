@@ -6,8 +6,10 @@ export const SITE = {
 	name: "README Score",
 	/** Lower case, no spaces: the MCP server's name, the health check's service and the badge's label. */
 	id: "readme-score",
-	/** Under 60 characters: the <title> of the home page and the Product Hunt tagline. */
+	/** Under 60 characters: the home page's headline and the Product Hunt tagline. */
 	tagline: "Your README, scored out of 100, with a fix for every miss",
+	/** The <title> of the home page: 10 to 70 characters, so "name: tagline" (71) is too long. */
+	homeTitle: "README Score: your README out of 100, with a fix for every miss",
 	/** 110 to 160 characters: the meta description and the link preview text. */
 	description:
 		"Enter a GitHub repo or paste a README: a score out of 100, the sections found and missing, and a fix for each miss. No AI: same README, same score.",
