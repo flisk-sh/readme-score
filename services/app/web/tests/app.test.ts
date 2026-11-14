@@ -35,7 +35,7 @@ describe("pages", () => {
 		const html = await res.text();
 		expect(html).not.toContain("<script>");
 		expect(html).toContain(
-			'<script src="https://flisk.si/assets/bar.js" defer></script>',
+			'<script defer data-domain="readme.flisk.si" src="https://flisk.sh/a.js"></script><script src="https://flisk.si/assets/bar.js" defer></script>',
 		);
 	});
 

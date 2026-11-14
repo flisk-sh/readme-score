@@ -120,7 +120,7 @@ function layout(base: string, meta: PageMeta, body: string): string {
 	const root = rootOf(base);
 	return `<!doctype html><html lang="${SITE.lang}"><head>
 ${head(base, meta)}
-<style>${STYLE}</style><script src="https://flisk.si/assets/bar.js" defer></script></head><body>
+<style>${STYLE}</style><script defer data-domain="readme.flisk.si" src="https://flisk.sh/a.js"></script><script src="https://flisk.si/assets/bar.js" defer></script></head><body>
 <header class="top stage"><nav class="wrap" aria-label="Site"><a href="${root}/"><img src="${root}/icon.svg" alt="" width="26" height="26">${esc(SITE.name)}</a><a href="${root}/checks">Checks</a><a href="${root}/about">About</a></nav></header>
 <main>${body}</main>
 <footer><div class="wrap">${esc(SITE.name)}: no AI, no JavaScript, no cookies, nothing stored. <a href="${SITE.repo}">Open source</a>, made by <a href="${SITE.author.url}">${esc(SITE.author.name)}</a>.<p class="dh"><a href="https://devhunt.org/tool/readme-score" target="_blank" rel="noopener" title="README Score on DevHunt"><img src="https://devhunt.org/badge/readme-score.svg" alt="README Score - Featured on DevHunt" width="220" height="54" loading="lazy"></a></p></div></footer>
