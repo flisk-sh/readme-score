@@ -155,9 +155,18 @@ export function createApp(options: AppOptions = {}) {
 	app.get("/ready", (c) => c.json({ ready: true }));
 
 	// Pages
-	app.get("/", (c) => c.html(homePage(baseOf(c))));
-	app.get("/about", (c) => c.html(aboutPage(baseOf(c))));
-	app.get("/checks", (c) => c.html(checksPage(baseOf(c))));
+	app.get("/", (c) => {
+		c.header("cache-control", "public, max-age=300");
+		return c.html(homePage(baseOf(c)));
+	});
+	app.get("/about", (c) => {
+		c.header("cache-control", "public, max-age=300");
+		return c.html(aboutPage(baseOf(c)));
+	});
+	app.get("/checks", (c) => {
+		c.header("cache-control", "public, max-age=300");
+		return c.html(checksPage(baseOf(c)));
+	});
 	app.get("/check", (c) => {
 		const value = c.req.query("repo") ?? "";
 		const spec = parseRepo(value);

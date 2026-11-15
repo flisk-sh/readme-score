@@ -382,3 +382,25 @@ describe("prompts", () => {
 		expect(got.error.code).toBe(-32602);
 	});
 });
+
+describe("public page caching", () => {
+	it.each(["/", "/about", "/checks"])(
+		"caches %s without calling GitHub",
+		async (path) => {
+			const fake = fakeGitHub([]);
+			const page = createApp({
+				publicUrl: "https://tool.test/",
+				github: { fetch: fake.fetch },
+			});
+			for (const method of ["GET", "HEAD"]) {
+				const res = await page.request(path, { method });
+				expect(res.status).toBe(200);
+				expect(res.headers.get("cache-control")).toBe("public, max-age=300");
+				expect(res.headers.get("content-security-policy")).toContain(
+					"default-src 'none'",
+				);
+			}
+			expect(fake.calls).toEqual([]);
+		},
+	);
+});
