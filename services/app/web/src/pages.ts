@@ -110,7 +110,7 @@ footer{margin-top:96px;border-top:1px solid var(--line);padding:26px 0 44px;colo
 .stats div{padding:24px 20px 28px 0}.stats div+div{padding-left:20px;border-left:1px solid var(--line)}
 .stats b{display:block;font-size:clamp(30px,4vw,48px);line-height:1;font-weight:800;letter-spacing:-.04em}.stats span{display:block;margin-top:8px;color:var(--muted);font-size:14px;line-height:1.4;max-width:22ch}
 .kick{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin:72px 0 10px}.kick+h2{margin-top:0}
-@media (max-width:640px){.stats{grid-template-columns:1fr 1fr}.stats div{padding:18px 12px 20px 0}.stats div+div{padding-left:12px}.stats div:nth-child(3){padding-left:0;border-left:0}.stats div:nth-child(n+3){border-top:1px solid var(--line)}form.repo{flex-direction:column}button,a.btn{width:100%}}
+@media (max-width:640px){header.top .wrap{flex-wrap:wrap;gap:0 16px}header.top a,.chip{display:inline-flex;align-items:center;min-height:44px}details.paste summary{min-height:44px;align-content:center}.stats{grid-template-columns:1fr 1fr}.stats div{padding:18px 12px 20px 0}.stats div+div{padding-left:12px}.stats div:nth-child(3){padding-left:0;border-left:0}.stats div:nth-child(n+3){border-top:1px solid var(--line)}form.repo{flex-direction:column}button,a.btn{width:100%}}
 `;
 
 const rootOf = (base: string) =>
