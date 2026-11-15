@@ -19,6 +19,15 @@ export default {
 		env: Env,
 		ctx: unknown,
 	): Response | Promise<Response> {
+		// "Always Use HTTPS" is a zone-wide setting, so the Worker redirects on
+		// its own: the first request from an old http link is otherwise served
+		// unencrypted. The URL keeps the path and query.
+		const url = new URL(request.url);
+		if (url.protocol === "http:") {
+			url.protocol = "https:";
+			return Response.redirect(url.toString(), 301);
+		}
+
 		app ??= createApp({
 			publicUrl: env.PUBLIC_URL || undefined,
 			proxy: parseProxyMode(env.TRUST_PROXY),

@@ -46,4 +46,31 @@ describe("Cloudflare Worker entry", () => {
 		expect(res.status).toBe(200);
 		expect(await res.text()).toContain("tools");
 	});
+
+	it("redirects a plain http request to https", async () => {
+		const res = await worker.fetch(
+			new Request("http://readme.flisk.si/"),
+			env,
+			{},
+		);
+		expect(res.status).toBe(301);
+		expect(res.headers.get("location")).toBe("https://readme.flisk.si/");
+	});
+
+	it("keeps the path and query when redirecting to https", async () => {
+		const res = await worker.fetch(
+			new Request("http://readme.flisk.si/score?q=readme&page=2"),
+			env,
+			{},
+		);
+		expect(res.status).toBe(301);
+		expect(res.headers.get("location")).toBe(
+			"https://readme.flisk.si/score?q=readme&page=2",
+		);
+	});
+
+	it("leaves an https request untouched", async () => {
+		const res = await call("/ready");
+		expect(res.status).toBe(200);
+	});
 });
