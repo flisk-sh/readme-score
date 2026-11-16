@@ -92,6 +92,12 @@ describe("files for crawlers", () => {
 		expect(robots).toContain("Sitemap: https://tool.test/sitemap.xml");
 	});
 
+	it("serves robots.txt as text with a public day-long cache", async () => {
+		const res = await app.request("/robots.txt");
+		expect(res.headers.get("content-type")).toContain("text/plain");
+		expect(res.headers.get("cache-control")).toBe("public, max-age=86400");
+	});
+
 	it("sitemap.xml lists the home page, about, the checks and the example repositories", async () => {
 		const res = await app.request("/sitemap.xml");
 		expect(res.headers.get("content-type")).toContain("application/xml");

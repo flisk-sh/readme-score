@@ -223,7 +223,10 @@ export function createApp(options: AppOptions = {}) {
 	});
 
 	// For search engines and AI assistants
-	app.get("/robots.txt", (c) => c.text(robotsTxt(baseOf(c))));
+	app.get("/robots.txt", (c) => {
+		c.header("cache-control", "public, max-age=86400");
+		return c.text(robotsTxt(baseOf(c)));
+	});
 	app.get("/sitemap.xml", (c) => {
 		const paths = ["", "about", "checks", ...SITE.examples];
 		return c.body(sitemapXml(baseOf(c), paths, lastmod), 200, {
