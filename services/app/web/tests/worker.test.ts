@@ -15,6 +15,19 @@ describe("Cloudflare Worker entry", () => {
 		expect(res.status).toBe(200);
 	});
 
+	it.each([
+		["/about/", "/about"],
+		["/checks/", "/checks"],
+		["/about/?x=1", "/about?x=1"],
+	])("redirects %s to %s", async (path, canonicalPath) => {
+		const res = await call(path);
+		expect(res.status).toBe(301);
+		expect(res.headers.get("location")).toBe(
+			`https://readme.flisk.si${canonicalPath}`,
+		);
+		expect((await call(canonicalPath)).status).toBe(200);
+	});
+
 	it("serves the home page with the public URL in its canonical link", async () => {
 		const res = await call("/");
 		expect(res.status).toBe(200);
