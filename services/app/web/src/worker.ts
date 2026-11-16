@@ -11,6 +11,8 @@ interface Env {
 	GITHUB_TOKEN?: string;
 }
 
+const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
 let app: ReturnType<typeof createApp> | undefined;
 
 export default {
@@ -21,9 +23,11 @@ export default {
 	): Response | Promise<Response> {
 		// "Always Use HTTPS" is a zone-wide setting, so the Worker redirects on
 		// its own: the first request from an old http link is otherwise served
-		// unencrypted. The URL keeps the path and query.
+		// unencrypted. The URL keeps the path and query. Loopback hosts are left alone so
+		// `wrangler dev` (plain http://localhost) keeps working; at the edge the Worker sees
+		// the visitor's scheme, so an https request never loops.
 		const url = new URL(request.url);
-		if (url.protocol === "http:") {
+		if (url.protocol === "http:" && !LOOPBACK.has(url.hostname)) {
 			url.protocol = "https:";
 			return Response.redirect(url.toString(), 301);
 		}

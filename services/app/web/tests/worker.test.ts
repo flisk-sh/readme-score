@@ -69,6 +69,17 @@ describe("Cloudflare Worker entry", () => {
 		);
 	});
 
+	it("does not redirect loopback hosts, so local dev keeps working", async () => {
+		for (const host of ["localhost:8787", "127.0.0.1:8787", "[::1]:8787"]) {
+			const res = await worker.fetch(
+				new Request(`http://${host}/ready`),
+				env,
+				{},
+			);
+			expect(res.status).toBe(200);
+		}
+	});
+
 	it("leaves an https request untouched", async () => {
 		const res = await call("/ready");
 		expect(res.status).toBe(200);
