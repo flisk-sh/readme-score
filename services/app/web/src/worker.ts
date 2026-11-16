@@ -32,6 +32,11 @@ export default {
 			return Response.redirect(url.toString(), 301);
 		}
 
+		if (url.pathname === "/about/" || url.pathname === "/checks/") {
+			url.pathname = url.pathname.slice(0, -1);
+			return Response.redirect(url.toString(), 301);
+		}
+
 		app ??= createApp({
 			publicUrl: env.PUBLIC_URL || undefined,
 			proxy: parseProxyMode(env.TRUST_PROXY),
