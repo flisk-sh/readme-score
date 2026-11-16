@@ -3,6 +3,7 @@
 // secret (`bunx wrangler@4 secret put GITHUB_TOKEN`).
 import { createApp } from "./app";
 import { parseProxyMode } from "./guard";
+import { withSecurityHeaders } from "./security-headers";
 
 interface Env {
 	PUBLIC_URL?: string;
@@ -16,11 +17,17 @@ const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
 let app: ReturnType<typeof createApp> | undefined;
 
 export default {
-	fetch(
-		request: Request,
-		env: Env,
-		ctx: unknown,
-	): Response | Promise<Response> {
+	async fetch(request: Request, env: Env, ctx: unknown): Promise<Response> {
+		return withSecurityHeaders(await handle(request, env, ctx));
+	},
+};
+
+function handle(
+	request: Request,
+	env: Env,
+	ctx: unknown,
+): Response | Promise<Response> {
+	{
 		// "Always Use HTTPS" is a zone-wide setting, so the Worker redirects on
 		// its own: the first request from an old http link is otherwise served
 		// unencrypted. The URL keeps the path and query. Loopback hosts are left alone so
@@ -44,5 +51,5 @@ export default {
 			github: { token: env.GITHUB_TOKEN || undefined },
 		});
 		return app.fetch(request, env, ctx as never);
-	},
-};
+	}
+}
