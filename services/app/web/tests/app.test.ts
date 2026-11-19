@@ -66,7 +66,7 @@ describe("pages", () => {
 				"no AI, no JavaScript, no cookies, nothing stored",
 			);
 			expect(res.headers.get("content-security-policy")).toContain(
-				"img-src 'self' https://api.producthunt.com https://devhunt.org;",
+				"img-src 'self' https://api.producthunt.com https://devhunt.org https://flisk.si;",
 			);
 		}
 	});
