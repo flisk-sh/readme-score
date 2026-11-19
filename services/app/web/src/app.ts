@@ -15,6 +15,7 @@ import {
 	type ProxyMode,
 	RateLimiter,
 	securityHeaders,
+	TtlCache,
 } from "./guard";
 import { type Loaded, RepoLoader } from "./loader";
 import { handleMcp, readmeTools } from "./mcp";
@@ -44,6 +45,20 @@ import { fetchWebsite } from "./website";
 
 /** A pasted README larger than this is refused. */
 export const MAX_PASTE_BYTES = 512 * 1024;
+
+/** How long a scored repository report is reused by GET /api/score, and how many reports are kept. */
+export const SCORE_CACHE_MS = 5 * 60 * 1000;
+export const SCORE_CACHE_ENTRIES = 200;
+
+/** A stable, dependency-free entity tag for a JSON body. */
+const etagOf = (body: string) => {
+	let hash = 2166136261;
+	for (let i = 0; i < body.length; i++) {
+		hash ^= body.charCodeAt(i);
+		hash = Math.imul(hash, 16777619) >>> 0;
+	}
+	return `"${hash.toString(16)}"`;
+};
 
 export interface AppOptions {
 	/** The address people use, ending in a slash. Without it, each request's own address (see baseOf). */
@@ -82,6 +97,7 @@ export function createApp(options: AppOptions = {}) {
 	const websiteOptions =
 		options.github?.website === false ? {} : (options.github?.website ?? {});
 	const loader = new RepoLoader(options.github);
+	const scoreCache = new TtlCache<Report>(SCORE_CACHE_MS, SCORE_CACHE_ENTRIES);
 	const app = new Hono();
 
 	/**
@@ -118,7 +134,9 @@ export function createApp(options: AppOptions = {}) {
 	const load = (
 		c: Parameters<typeof clientOf>[0],
 		spec: RepoSpec,
-	): Promise<Loaded | undefined> => loader.get(spec, () => limited(c) === 0);
+		fresh = false,
+	): Promise<Loaded | undefined> =>
+		loader.get(spec, () => limited(c) === 0, fresh);
 	const busy =
 		"Too many repositories at once from here, or GitHub is busy. Wait a minute and try again, or paste the README.";
 
@@ -309,8 +327,9 @@ export function createApp(options: AppOptions = {}) {
 		c: Parameters<typeof clientOf>[0],
 		spec: RepoSpec,
 		type?: ProjectType,
+		fresh = false,
 	): Promise<Report | GitHubError | undefined> => {
-		const loaded = await load(c, spec);
+		const loaded = await load(c, spec, fresh);
 		if (loaded === undefined || loaded instanceof GitHubError) return loaded;
 		return score({ ...(loaded as ReadmeInput), ...(type ? { type } : {}) });
 	};
@@ -334,11 +353,31 @@ export function createApp(options: AppOptions = {}) {
 				},
 				400,
 			);
-		const r = await scoreSpec(c, spec, typeParam(c.req.query("type")));
-		if (r === undefined)
-			return c.json({ error: busy }, 429, { "retry-after": "60" });
-		if (r instanceof GitHubError) return c.json({ error: r.message }, r.status);
-		return c.json({ ...r, url: resultUrl(c, r, spec) });
+		const type = typeParam(c.req.query("type"));
+		const fresh = c.req.query("fresh") === "1";
+		const key = `${baseOf(c)}|${spec.owner}/${spec.name}@${spec.ref ?? ""}|${type ?? ""}`;
+		let report = fresh ? undefined : scoreCache.get(key);
+		if (!report) {
+			const r = await scoreSpec(c, spec, type, fresh);
+			if (r === undefined)
+				return c.json({ error: busy }, 429, { "retry-after": "60" });
+			if (r instanceof GitHubError)
+				return c.json({ error: r.message }, r.status);
+			report = r;
+			if (!fresh) scoreCache.set(key, report);
+		}
+		const body = JSON.stringify({ ...report, url: resultUrl(c, report, spec) });
+		const etag = etagOf(body);
+		const headers = {
+			"cache-control": "public, max-age=300",
+			etag,
+		};
+		if (!fresh && c.req.header("if-none-match") === etag)
+			return c.body(null, 304, headers);
+		return c.body(body, 200, {
+			"content-type": "application/json; charset=utf-8",
+			...headers,
+		});
 	});
 	app.post("/api/score", async (c) => {
 		const wait = limited(c);
