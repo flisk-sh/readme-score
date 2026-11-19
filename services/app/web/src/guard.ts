@@ -116,7 +116,7 @@ export function securityHeaders(): Record<string, string> {
 			"script-src https://flisk.si https://flisk.sh",
 			"connect-src https://analytics.flisk.si",
 			"style-src 'unsafe-inline'",
-			"img-src 'self' https://api.producthunt.com https://devhunt.org",
+			"img-src 'self' https://api.producthunt.com https://devhunt.org https://flisk.si",
 			"media-src 'self'",
 			"base-uri 'none'",
 			"form-action 'self'",
