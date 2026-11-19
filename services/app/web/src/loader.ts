@@ -31,14 +31,16 @@ export class RepoLoader {
 
 	/**
 	 * The repository's files or the reason they cannot be read. `allowed` is asked before GitHub is: undefined comes
-	 * back when it says no (the client is over its rate limit) or when every read slot is taken.
+	 * back when it says no (the client is over its rate limit) or when every read slot is taken. `fresh` skips the
+	 * remembered result so an explicit refresh asks GitHub again.
 	 */
 	async get(
 		spec: RepoSpec,
 		allowed: () => boolean = () => true,
+		fresh = false,
 	): Promise<Loaded | undefined> {
 		const key = this.key(spec);
-		const hit = this.ok.get(key) ?? this.failed.get(key);
+		const hit = fresh ? undefined : (this.ok.get(key) ?? this.failed.get(key));
 		if (hit) return hit;
 		if (!allowed()) return undefined;
 		return this.slots.run(async () => {

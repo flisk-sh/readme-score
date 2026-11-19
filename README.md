@@ -110,6 +110,8 @@ It prints `{"status":"ok","service":"readme-score"}`. The repository keeps the l
 
 A repository is read at one commit with three GitHub API calls (the repository, the commit, the file tree); its files
 come from raw.githubusercontent.com, which the API limit does not count. Results stay in memory for ten minutes.
+`GET /api/score` also reuses the finished report for five minutes, with `Cache-Control: public, max-age=300` and an
+`ETag`; a matching `If-None-Match` gets `304`. Add `&fresh=1` to bypass both caches and read GitHub again.
 
 ## Configuration
 
