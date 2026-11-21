@@ -140,3 +140,53 @@ describe("files for crawlers", () => {
 		}
 	});
 });
+
+describe("the MCP Server Card", () => {
+	const paths = [
+		"/.well-known/mcp-server-card.json",
+		"/.well-known/mcp/server-card.json",
+	];
+
+	it.each(paths)("is served at %s for GET and HEAD", async (path) => {
+		for (const method of ["GET", "HEAD"]) {
+			const res = await app.request(path, { method });
+			expect(res.status).toBe(200);
+			expect(res.headers.get("content-type")).toBe(
+				"application/json; charset=utf-8",
+			);
+			expect(res.headers.get("access-control-allow-origin")).toBe("*");
+			expect(res.headers.get("cache-control")).toBe("public, max-age=3600");
+		}
+		const card = await (await app.request(path)).json();
+		expect(card.$schema).toBe(
+			"https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json",
+		);
+		expect(card.name).toBe("si.flisk/readme-score");
+		expect(card.title).toBe(`${SITE.name} MCP`);
+		expect(card.remotes[0]).toEqual({
+			type: "streamable-http",
+			url: "https://tool.test/mcp",
+		});
+	});
+
+	it("answers the same bytes at both paths, and matches initialize", async () => {
+		const [a, b] = await Promise.all(paths.map((p) => page(p)));
+		expect(a).toBe(b);
+		const init = await app.request("/mcp", {
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+				accept: "application/json, text/event-stream",
+			},
+			body: JSON.stringify({
+				jsonrpc: "2.0",
+				id: 1,
+				method: "initialize",
+				params: { protocolVersion: "2025-03-26", capabilities: {} },
+			}),
+		});
+		const info = (await init.json()).result.serverInfo;
+		expect(JSON.parse(a).title).toBe(info.title);
+		expect(JSON.parse(a).version).toBe(info.version);
+	});
+});
