@@ -224,7 +224,7 @@ export function mcpServerCard(base: string): string {
 			name: "si.flisk/readme-score",
 			title: `${SITE.name} MCP`,
 			description:
-				"Score a GitHub README out of 100, with the sections found, the sections missing and a fix for each miss. No AI: the same README always gets the same score.",
+				"Score a GitHub README out of 100 with the missing sections and a fix for each. No AI.",
 			version: "1.0.0",
 			websiteUrl: `${base}/`,
 			remotes: [{ type: "streamable-http", url: `${base}/mcp` }],
