@@ -31,7 +31,9 @@ describe("pages", () => {
 		const csp = res.headers.get("content-security-policy");
 		expect(csp).toContain("default-src 'none'");
 		expect(csp).toContain("script-src https://flisk.si https://flisk.sh;");
-		expect(csp).toContain("connect-src https://analytics.flisk.si https://flisk.si;");
+		expect(csp).toContain(
+			"connect-src https://analytics.flisk.si https://flisk.si;",
+		);
 		const html = await res.text();
 		expect(html).not.toContain("<script>");
 		expect(html).toContain(
