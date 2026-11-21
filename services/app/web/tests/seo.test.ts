@@ -163,6 +163,10 @@ describe("the MCP Server Card", () => {
 		);
 		expect(card.name).toBe("si.flisk/readme-score");
 		expect(card.title).toBe(`${SITE.name} MCP`);
+		// The Server Card schema: title <= 100, description 1-100 characters.
+		expect(card.title.length).toBeLessThanOrEqual(100);
+		expect(card.description.length).toBeGreaterThanOrEqual(1);
+		expect(card.description.length).toBeLessThanOrEqual(100);
 		expect(card.remotes[0]).toEqual({
 			type: "streamable-http",
 			url: "https://tool.test/mcp",
