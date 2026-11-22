@@ -16,11 +16,11 @@ export function withSecurityHeaders(response: Response): Response {
 		if (!out.headers.has(name)) out.headers.set(name, value);
 	const csp = out.headers.get("content-security-policy");
 	if (!csp)
-		out.headers.set("content-security-policy", "frame-ancestors 'self'");
+		out.headers.set("content-security-policy", "frame-ancestors 'self' https://analytics.flisk.si");
 	else if (!/(^|;)\s*frame-ancestors\b/i.test(csp))
 		out.headers.set(
 			"content-security-policy",
-			`${csp}; frame-ancestors 'self'`,
+			`${csp}; frame-ancestors 'self' https://analytics.flisk.si`,
 		);
 	return out;
 }
