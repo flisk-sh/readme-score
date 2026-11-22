@@ -121,7 +121,7 @@ export function securityHeaders(): Record<string, string> {
 			"font-src https://flisk.si",
 			"base-uri 'none'",
 			"form-action 'self'",
-			"frame-ancestors 'none'",
+			"frame-ancestors https://analytics.flisk.si",
 		].join("; "),
 		"x-content-type-options": "nosniff",
 		"referrer-policy": "strict-origin-when-cross-origin",
