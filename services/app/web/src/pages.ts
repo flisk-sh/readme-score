@@ -121,7 +121,7 @@ function layout(base: string, meta: PageMeta, body: string): string {
 	const root = rootOf(base);
 	return `<!doctype html><html lang="${SITE.lang}"><head>
 ${head(base, meta)}
-<style>${STYLE}</style><script defer data-domain="readme.flisk.si" src="https://flisk.sh/a.js"></script><script src="https://flisk.si/assets/bar.js" defer></script></head><body>
+<style>${STYLE}</style><script defer data-domain="readme.flisk.si" src="https://flisk.sh/a.js"></script><script src="https://flisk.si/assets/bar.js" data-product="README Score" data-icon="readme-checker" data-accent="#9db0ff" data-text="Score any README out of 100 and see the fix for each miss." defer></script></head><body>
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="top stage"><nav class="wrap" aria-label="Site"><a href="${root}/"><img src="${root}/icon.svg" alt="" width="26" height="26">${esc(SITE.name)}</a><a href="${root}/checks">Checks</a><a href="${root}/about">About</a></nav></header>
 <main id="main">${body}</main>

@@ -33,6 +33,7 @@ import { summarize } from "./readme/summary";
 import {
 	ICONS,
 	llmsTxt,
+	mcpServerCard,
 	robotsTxt,
 	securityTxt,
 	sitemapXml,
@@ -270,6 +271,18 @@ export function createApp(options: AppOptions = {}) {
 		}),
 	);
 	app.get("/.well-known/security.txt", (c) => c.text(securityTxt(baseOf(c))));
+	// The MCP Server Card, at both paths clients look: the same bytes, readable from any page (CORS).
+	for (const path of [
+		"/.well-known/mcp-server-card.json",
+		"/.well-known/mcp/server-card.json",
+	])
+		app.get(path, (c) =>
+			c.body(mcpServerCard(baseOf(c)), 200, {
+				"content-type": "application/json; charset=utf-8",
+				"access-control-allow-origin": "*",
+				"cache-control": "public, max-age=3600",
+			}),
+		);
 	// The how-it-works clip (video/render.ts). Safari plays a video only from a server that answers byte ranges.
 	for (const [name, file] of Object.entries(VIDEO)) {
 		const body = Buffer.from(file.base64, "base64");
