@@ -241,6 +241,39 @@ describe("API, badge and MCP", () => {
 		).toBe("api");
 	});
 
+	it("reuses a scored report, sends Cache-Control/ETag and answers 304, with ?fresh=1 bypassing both", async () => {
+		const gh = github();
+		const local = createApp({
+			publicUrl: "https://tool.test/",
+			github: { fetch: gh.fetch },
+		});
+		const first = await local.request("/api/score?repo=acme/rowcount");
+		expect(first.status).toBe(200);
+		const firstJson = await first.json();
+		const etag = first.headers.get("etag");
+		expect(etag).toMatch(/^"[\da-f]+"$/);
+		expect(first.headers.get("cache-control")).toBe("public, max-age=300");
+		const afterFirst = gh.calls.length;
+		expect(afterFirst).toBeGreaterThan(0);
+
+		const second = await local.request("/api/score?repo=acme/rowcount");
+		expect(second.status).toBe(200);
+		expect(second.headers.get("etag")).toBe(etag);
+		expect(await second.json()).toEqual(firstJson);
+		expect(gh.calls.length).toBe(afterFirst);
+
+		const cached = await local.request("/api/score?repo=acme/rowcount", {
+			headers: { "if-none-match": etag ?? "" },
+		});
+		expect(cached.status).toBe(304);
+		expect(cached.headers.get("etag")).toBe(etag);
+		expect(gh.calls.length).toBe(afterFirst);
+
+		const fresh = await local.request("/api/score?repo=acme/rowcount&fresh=1");
+		expect(fresh.status).toBe(200);
+		expect(gh.calls.length).toBeGreaterThan(afterFirst);
+	});
+
 	it("draws the badge with the score, and unknown for a missing repository", async () => {
 		const svg = await app.request("/badge/acme/rowcount.svg");
 		expect(svg.headers.get("content-type")).toContain("image/svg+xml");
