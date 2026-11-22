@@ -17,7 +17,7 @@ describe("security headers", () => {
 			"camera=(), microphone=(), geolocation=()",
 		);
 		expect(res.headers.get("content-security-policy")).toBe(
-			"frame-ancestors 'self'",
+			"frame-ancestors 'self' https://analytics.flisk.si",
 		);
 	});
 
@@ -32,7 +32,7 @@ describe("security headers", () => {
 		);
 		expect(res.headers.get("x-frame-options")).toBe("DENY");
 		expect(res.headers.get("content-security-policy")).toBe(
-			"default-src 'none'; frame-ancestors 'self'",
+			"default-src 'none'; frame-ancestors 'self' https://analytics.flisk.si",
 		);
 		const own = withSecurityHeaders(
 			new Response("hi", {
