@@ -214,3 +214,22 @@ export function securityTxt(base: string, now = new Date()): string {
 	const expires = new Date(now.getTime() + 180 * 24 * 3600 * 1000);
 	return `Contact: ${SITE.securityContact}\nExpires: ${expires.toISOString().replace(/\.\d+Z$/, "Z")}\nPreferred-Languages: ${SITE.lang}\nCanonical: ${base}/.well-known/security.txt\n`;
 }
+
+/** The MCP Server Card (SEP-1649): what /mcp is, found at /.well-known/mcp-server-card.json without opening a session. */
+export function mcpServerCard(base: string): string {
+	return JSON.stringify(
+		{
+			$schema:
+				"https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json",
+			name: "si.flisk/readme-score",
+			title: `${SITE.name} MCP`,
+			description:
+				"Score a GitHub README out of 100 with the missing sections and a fix for each. No AI.",
+			version: "1.0.0",
+			websiteUrl: `${base}/`,
+			remotes: [{ type: "streamable-http", url: `${base}/mcp` }],
+		},
+		null,
+		2,
+	);
+}

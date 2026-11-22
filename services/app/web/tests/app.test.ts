@@ -31,11 +31,13 @@ describe("pages", () => {
 		const csp = res.headers.get("content-security-policy");
 		expect(csp).toContain("default-src 'none'");
 		expect(csp).toContain("script-src https://flisk.si https://flisk.sh;");
-		expect(csp).toContain("connect-src https://analytics.flisk.si;");
+		expect(csp).toContain(
+			"connect-src https://analytics.flisk.si https://flisk.si;",
+		);
 		const html = await res.text();
 		expect(html).not.toContain("<script>");
 		expect(html).toContain(
-			'<script defer data-domain="readme.flisk.si" src="https://flisk.sh/a.js"></script><script src="https://flisk.si/assets/bar.js" defer></script>',
+			'<script defer data-domain="readme.flisk.si" src="https://flisk.sh/a.js"></script><script src="https://flisk.si/assets/bar.js" data-product="README Score" data-icon="readme-checker" data-accent="#9db0ff" data-text="Score any README out of 100 and see the fix for each miss." defer></script>',
 		);
 	});
 
@@ -47,7 +49,7 @@ describe("pages", () => {
 		);
 		expect(html).toContain('rel="noopener noreferrer"');
 		expect(res.headers.get("content-security-policy")).toContain(
-			"img-src 'self' https://api.producthunt.com https://devhunt.org",
+			"img-src 'self' https://flisk.si https://api.producthunt.com https://devhunt.org",
 		);
 		expect(await (await app.request("/about")).text()).not.toContain(
 			"producthunt.com",
@@ -66,7 +68,7 @@ describe("pages", () => {
 				"no AI, no JavaScript, no cookies, nothing stored",
 			);
 			expect(res.headers.get("content-security-policy")).toContain(
-				"img-src 'self' https://api.producthunt.com https://devhunt.org;",
+				"img-src 'self' https://flisk.si https://api.producthunt.com https://devhunt.org;",
 			);
 		}
 	});

@@ -55,6 +55,7 @@ const STYLE = `
 :root{--bg:${SITE.themeColor.light};--fg:#141413;--muted:#66635c;--line:#e3e0d7;--card:#fff;--sunk:#efede7;--pass:#18794e;--fail:#c22a1f;--skip:#8a857a;--accent:#2d4cc8;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
 @media (prefers-color-scheme:dark){:root{--bg:${SITE.themeColor.dark};--fg:#eceae4;--muted:#a29f97;--line:#272a31;--card:#16181d;--sunk:#1c1f25;--pass:#4fcf8e;--fail:#ff7b72;--skip:#8f8b83;--accent:#8ea2ff}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.skip-link{position:absolute;left:-9999px;top:0;z-index:100;padding:10px 14px;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:4px;font-weight:700}.skip-link:focus{left:12px;top:12px;outline:2px solid var(--accent);outline-offset:2px}
 a{color:var(--accent);text-underline-offset:3px}.wrap{max-width:880px;margin:0 auto;padding:0 20px}
 .stage{position:relative;overflow:hidden;background:#07080c;color:#f4f3ef;--fg:#f4f3ef;--muted:#b0afba;--line:#262833;--card:#11131a;--sunk:#1b1e28;--accent:#9db0ff;--pass:#4ade80;--fail:#ff7b72}
 .stage::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);background-size:56px 56px;-webkit-mask-image:radial-gradient(60% 65% at 50% 30%,#000 25%,transparent 100%);mask-image:radial-gradient(60% 65% at 50% 30%,#000 25%,transparent 100%);pointer-events:none}
@@ -120,9 +121,10 @@ function layout(base: string, meta: PageMeta, body: string): string {
 	const root = rootOf(base);
 	return `<!doctype html><html lang="${SITE.lang}"><head>
 ${head(base, meta)}
-<style>${STYLE}</style><script defer data-domain="readme.flisk.si" src="https://flisk.sh/a.js"></script><script src="https://flisk.si/assets/bar.js" defer></script></head><body>
+<style>${STYLE}</style><script defer data-domain="readme.flisk.si" src="https://flisk.sh/a.js"></script><script src="https://flisk.si/assets/bar.js" data-product="README Score" data-icon="readme-checker" data-accent="#9db0ff" data-text="Score any README out of 100 and see the fix for each miss." defer></script></head><body>
+<a class="skip-link" href="#main">Skip to content</a>
 <header class="top stage"><nav class="wrap" aria-label="Site"><a href="${root}/"><img src="${root}/icon.svg" alt="" width="26" height="26">${esc(SITE.name)}</a><a href="${root}/checks">Checks</a><a href="${root}/about">About</a></nav></header>
-<main>${body}</main>
+<main id="main">${body}</main>
 <footer><div class="wrap">${esc(SITE.name)}: no AI, no JavaScript, no cookies, nothing stored. <a href="${SITE.repo}">Open source</a>, made by <a href="${SITE.author.url}">${esc(SITE.author.name)}</a>.<p class="dh"><a href="https://devhunt.org/tool/readme-score" target="_blank" rel="noopener" title="README Score on DevHunt"><img src="https://devhunt.org/badge/readme-score.svg" alt="README Score - Featured on DevHunt" width="220" height="54" loading="lazy"></a></p></div></footer>
 </body></html>`;
 }
