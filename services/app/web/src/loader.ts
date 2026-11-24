@@ -27,7 +27,7 @@ export class RepoLoader {
 	constructor(private readonly options: GitHubOptions = {}) {}
 
 	private key = (s: RepoSpec) =>
-		`${s.owner}/${s.name}@${s.ref ?? ""}`.toLowerCase();
+		`${s.owner.toLowerCase()}/${s.name.toLowerCase()}@${s.ref ?? ""}`;
 
 	/**
 	 * The repository's files or the reason they cannot be read. `allowed` is asked before GitHub is: undefined comes
