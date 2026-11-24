@@ -645,17 +645,29 @@ export function errorPage(base: string, message: string, value = ""): string {
 }
 
 export function notFoundPage(base: string): string {
-	const root = rootOf(base);
-	return layout(
-		base,
-		{
-			path: "404",
-			title: "Page not found",
-			description: `This address is not a page on ${SITE.name}. A result address is a GitHub repository: /flisk-sh/flisk.`,
-			noindex: true,
-		},
-		`<div class="wrap prose"><h1>Page not found</h1><p class="lede">A result address is a GitHub repository: <a href="${root}/flisk-sh/flisk">/flisk-sh/flisk</a>.</p>${repoForm(root)}</div>`,
-	);
+	const root = esc(rootOf(base));
+	return `<!doctype html><html lang="${SITE.lang}"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Page not found | ${esc(SITE.name)}</title>
+<style>
+:root{color-scheme:light dark}
+body{margin:0;background:${SITE.themeColor.light};color:#141413;font:1rem/1.6 ui-sans-serif,system-ui,sans-serif}
+main{max-width:38rem;margin:10vh auto;padding:0 1.25rem}
+a{color:#2d4cc8;text-underline-offset:3px}
+.skip-link:not(:focus){position:absolute;clip-path:inset(50%)}
+.repo{display:flex;flex-wrap:wrap;gap:.5rem}
+.repo input,.repo button{font:inherit;padding:.5rem .75rem}
+.repo input{flex:1;min-width:0}
+@media(prefers-color-scheme:dark){body{background:${SITE.themeColor.dark};color:#eceae4}a{color:#8ea2ff}}
+</style>
+</head><body>
+<a class="skip-link" href="#main">Skip to content</a>
+<main id="main"><h1>Page not found</h1>
+${repoForm(root)}
+<p><a href="${root}/">Back to ${esc(SITE.name)}</a> or <a href="${root}/flisk-sh/flisk">view an example score</a>.</p>
+</main></body></html>`;
 }
 
 const GRADE_COLORS: Record<string, string> = {

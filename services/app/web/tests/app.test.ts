@@ -164,6 +164,20 @@ describe("pages", () => {
 		expect(html).toContain('<details class="paste" open>');
 	});
 
+	it("serves a small, self-contained 404 with recovery links under the public path", async () => {
+		const mounted = createApp({ publicUrl: "https://tool.test/tools/readme/" });
+		const res = await mounted.request("/not-a-route");
+		expect(res.status).toBe(404);
+		expect(res.headers.get("content-type")).toBe("text/html; charset=UTF-8");
+		const html = await res.text();
+		expect(new TextEncoder().encode(html).length).toBeLessThan(4_000);
+		expect(html).toContain('<meta name="robots" content="noindex">');
+		expect(html).toContain('<a href="/tools/readme/">Back to README Score</a>');
+		expect(html).toContain('action="/tools/readme/check"');
+		expect(html).not.toContain("<script");
+		expect(html).not.toContain('rel="stylesheet"');
+	});
+
 	it("scores a pasted README and escapes what it shows", async () => {
 		const res = await app.request(
 			"/paste",
