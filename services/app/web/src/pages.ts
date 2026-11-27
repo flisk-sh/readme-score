@@ -646,16 +646,18 @@ export function errorPage(base: string, message: string, value = ""): string {
 
 export function notFoundPage(base: string): string {
 	const root = rootOf(base);
-	return layout(
-		base,
-		{
-			path: "404",
-			title: "Page not found",
-			description: `This address is not a page on ${SITE.name}. A result address is a GitHub repository: /flisk-sh/flisk.`,
-			noindex: true,
-		},
-		`<div class="wrap prose"><h1>Page not found</h1><p class="lede">A result address is a GitHub repository: <a href="${root}/flisk-sh/flisk">/flisk-sh/flisk</a>.</p>${repoForm(root)}</div>`,
-	);
+	// A miss is hit by crawlers, typos and broken links, so it must not pay for
+	// the whole site shell and its inline stylesheet. Keep only what the page
+	// needs: a heading, a link home and a link to a result example.
+	return `<!doctype html><html lang="${SITE.lang}"><head>
+${head(base, {
+	path: "404",
+	title: "Page not found",
+	description: `This address is not a page on ${SITE.name}. A result address is a GitHub repository: /flisk-sh/flisk.`,
+	noindex: true,
+})}
+<style>body{margin:0;background:#fff;color:#171715;font:16px/1.55 system-ui,sans-serif;padding:32px}main{max-width:44rem;margin:0 auto}a{color:#1f7a4d}</style></head><body>
+<main><h1>Page not found</h1><p>A result address is a GitHub repository: <a href="${root}/flisk-sh/flisk">/flisk-sh/flisk</a>.</p><p><a href="${root}/">Home</a></p></main></body></html>`;
 }
 
 const GRADE_COLORS: Record<string, string> = {

@@ -547,6 +547,10 @@ export function createApp(options: AppOptions = {}) {
 	app.get(`/${OWNER}/${REPO}`, repoPage);
 	app.get(`/${OWNER}/${REPO}/tree/:ref{.+}`, repoPage);
 
-	app.notFound((c) => c.html(notFoundPage(baseOf(c)), 404));
+	app.notFound((c) =>
+		c.html(notFoundPage(baseOf(c)), 404, {
+			"cache-control": "public, max-age=300",
+		}),
+	);
 	return app;
 }
