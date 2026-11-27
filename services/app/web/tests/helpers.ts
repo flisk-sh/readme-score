@@ -57,6 +57,7 @@ export function fakeGitHub(
 						folders.add(parts.slice(0, i).join("/"));
 				}
 				return Response.json({
+					sha,
 					truncated: false,
 					tree: [
 						...[...folders].map((path) => ({ path, type: "tree" })),

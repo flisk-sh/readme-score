@@ -57,7 +57,7 @@ describe("parseRepo", () => {
 });
 
 describe("loadRepo", () => {
-	it("reads the README, the manifests and the tree at one commit, with three API calls", async () => {
+	it("reads the README, the manifests and the tree at one commit, with two API calls", async () => {
 		const gh = fakeGitHub([ROWCOUNT]);
 		const input = await loadRepo(
 			{ owner: "acme", name: "rowcount" },
@@ -76,12 +76,42 @@ describe("loadRepo", () => {
 		expect(input.manifests?.map((m) => m.path)).toEqual(["package.json"]);
 		expect(
 			gh.calls.filter((u) => u.startsWith("https://api.github.com/")).length,
-		).toBe(3);
+		).toBe(2);
 		expect(
 			gh.calls.every((u) =>
 				/^https:\/\/(?:api\.github\.com|raw\.githubusercontent\.com)\//.test(u),
 			),
 		).toBe(true);
+	});
+
+	it("fetches repo metadata and tree in parallel with at most 1 serial wait before raw reads", async () => {
+		let maxConcurrentApi = 0;
+		let currentConcurrentApi = 0;
+		const gh = fakeGitHub([ROWCOUNT]);
+		const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = String(input);
+			if (url.startsWith("https://api.github.com/")) {
+				currentConcurrentApi++;
+				maxConcurrentApi = Math.max(maxConcurrentApi, currentConcurrentApi);
+				await new Promise((resolve) => setTimeout(resolve, 10));
+				try {
+					return await gh.fetch(input, init);
+				} finally {
+					currentConcurrentApi--;
+				}
+			}
+			return gh.fetch(input, init);
+		}) as typeof globalThis.fetch;
+
+		const input = await loadRepo(
+			{ owner: "acme", name: "rowcount" },
+			{ fetch },
+		);
+		expect(input.readmePath).toBe("README.md");
+		expect(maxConcurrentApi).toBe(2);
+		expect(
+			gh.calls.filter((u) => u.startsWith("https://api.github.com/")).length,
+		).toBe(2);
 	});
 
 	it("finds the README where GitHub does: .github/ first, then the root, then docs/", async () => {

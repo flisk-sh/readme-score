@@ -1,6 +1,6 @@
 // Reads a public GitHub repository for the checks: the commit, the file tree, the README, the package manifests, the
-// llms.txt files and the translated READMEs, all at one commit, so a report names exactly what it scored. Three API
-// calls per repository (the repo, the commit, the tree); files come from raw.githubusercontent.com, which the API rate
+// llms.txt files and the translated READMEs, all at one commit, so a report names exactly what it scored. Two API
+// calls per repository (the repo metadata and the tree in parallel); files come from raw.githubusercontent.com, which the API rate
 // limit does not count. Only those two hosts are fetched, and owner, repository and ref are checked against GitHub's
 // own name rules first, so an address cannot send the server anywhere else.
 
@@ -290,28 +290,24 @@ async function loadFromApi(
 		(await (await call(`${API}${path}`, accept)).json()) as T;
 
 	const base = `/repos/${spec.owner}/${spec.name}`;
-	const repo = await api<{
-		name: string;
-		owner: { login: string };
-		default_branch: string;
-		description: string | null;
-		homepage?: string | null;
-	}>(base);
+	const [repo, tree] = await Promise.all([
+		api<{
+			name: string;
+			owner: { login: string };
+			default_branch: string;
+			description: string | null;
+			homepage?: string | null;
+		}>(base),
+		api<{
+			sha: string;
+			tree: { path: string; type: string }[];
+			truncated: boolean;
+		}>(`${base}/git/trees/${spec.ref ?? "HEAD"}?recursive=1`),
+	]);
 	const ref = spec.ref ?? repo.default_branch;
-	const sha = (
-		await (
-			await call(
-				`${API}${base}/commits/${encodeURIComponent(ref)}`,
-				"application/vnd.github.sha",
-			)
-		).text()
-	).trim();
+	const sha = tree.sha;
 	if (!/^[0-9a-f]{40}$/.test(sha))
 		throw new GitHubError(`GitHub sent no commit for ${ref}.`, 503);
-	const tree = await api<{
-		tree: { path: string; type: string }[];
-		truncated: boolean;
-	}>(`${base}/git/trees/${sha}?recursive=1`);
 	const paths = new Set(tree.tree.map((t) => t.path));
 	const files = tree.tree.filter((t) => t.type === "blob").map((t) => t.path);
 
@@ -356,12 +352,6 @@ async function loadFromApi(
 			`${repo.owner.login}/${repo.name} has no README in .github/, the root or docs/.`,
 			422,
 		);
-	const readme = await raw(readmePath);
-	if (!readme)
-		throw new GitHubError(
-			`The README of ${repo.owner.login}/${repo.name} could not be read.`,
-			503,
-		);
 
 	const nested = files
 		.filter(
@@ -382,6 +372,7 @@ async function loadFromApi(
 		MAX_TRANSLATIONS,
 	);
 	const wanted = [
+		readmePath,
 		...ROOT_MANIFESTS.filter((p) => paths.has(p)),
 		...nested,
 		...llmsPaths,
@@ -392,6 +383,12 @@ async function loadFromApi(
 			.filter((f): f is TextFile => f !== null)
 			.map((f) => [f.path, f]),
 	);
+	const readme = fetched.get(readmePath);
+	if (!readme)
+		throw new GitHubError(
+			`The README of ${repo.owner.login}/${repo.name} could not be read.`,
+			503,
+		);
 	const pick = (list: string[]) =>
 		list
 			.map((p) => fetched.get(p))
